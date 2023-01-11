@@ -86,4 +86,43 @@ The results of this process will become priors in the Bayesian model run. These 
 
 ## Model metabolism
 
+[deets on model set-up and stuff; could some of this material be moved upstream of the model function?]
+
+We highly recommend running the Bayesian models in parallel when possible. The models take a very long time to fit and converge and `nmh_model_metab_bayes()` takes advantage of parallelization. Below is example code to run the model in parallel that should be run each time, including and especially the `stopCluster()`, even if the model run was incomplete.
+
+    # Run before modeling
+    library(foreach) 
+    library(doParallel)
+
+    n.cores <- parallel::detectCores()
+
+    if(.Platform$OS.type == 'windows') {
+
+    cl <- parallel::makeCluster(n.cores, type = 'PSOCK')
+    } else {
+      cl <- parallel::makeCluster(n.cores, type = 'FORK')
+    }
+
+    registerDoParallel(cl)
+    foreach::getDoParWorkers()
+
+    # Run the model
+    nmh_model_metab_bayes()
+
+    # Run after the model
+    stopCluster(cl)
+    unregister_dopar <- function() {
+        env <- foreach:::.foreachGlobals
+        rm(list = ls(env), pos = env)
+    }
+    unregister_dopar()
+
 ## Evaluate and prepare outputs
+
+The following functions exist to parse and return an object of high confidence metabolism estimates.
+
+-   `nmh_diagnose_metab_bayes()` extracts MCMC convergence of site-year models and the "real-world" results from each year (number of days GPP \> -0.5 g $$O_2$$ m^-2^ d^-1^ or ER \< 0.5 g $$O_2$$ m^-2^ d^-1^).
+
+-   `nmh_estimate_metab_bayes()` returns "real-world" results with confidence bounds for GPP and ER, as well as model convergence stats, merged with relevant data from the input time series (e.g. DO min/max/range, mean depth, mean discharge, light inputs) and combines all sites into a single csv file.
+
+-   `nmh_filter_metab_bayes()` reads in the output of `nmh_diagnose_metab_bayes()`, which identifies site-years with models that did not converge or had a frequency of "real-world" results lower than a 60% threshold, and removes those data with poor model fits from the output file returned by `nmh_estimate_metab_bayes()` .

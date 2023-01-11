@@ -78,7 +78,7 @@ read_neon_feathers <- function(file_path, by_site){
     inv_file_names <- unique(inv_file_names)
     site_names <- unique(site_name)
     
-    data_files <-  inv_file_names[!grepl('categoricalCodes|readme|validation|variables', inv_file_names)]
+    data_files <- inv_file_names[!grepl('categoricalCodes|readme|validation|variables', inv_file_names)]
     
     final_list <- list()
     for(i in 1:length(data_files)){
@@ -103,7 +103,7 @@ read_neon_feathers <- function(file_path, by_site){
       final_list <- c(final_list, all_site_files)
     }
     
-    meta_data_files <-  inv_file_names[grepl('categoricalCodes|readme|validation|variables', inv_file_names)]
+    meta_data_files <- inv_file_names[grepl('categoricalCodes|readme|validation|variables', inv_file_names)]
     
     for(i in 1:length(meta_data_files)){
       
@@ -122,7 +122,6 @@ read_neon_feathers <- function(file_path, by_site){
     return(final_list)
   }
 }
-
 
 get_avail_neon_product_sets <- function(prodcode_full){
   
@@ -150,20 +149,22 @@ get_avail_neon_product_sets <- function(prodcode_full){
 FindandCollect_airpres = function(lat, lon, start_datetime, end_datetime) {
   #get df of all available air pressure stations
   tf = tempfile()
-  download.file("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.txt", tf, mode="wb")
+  utils::download.file("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.txt", tf, mode="wb")
   noaa.sites <- utils::read.fwf(tf, skip = 22, header = F,
-                                # widths = c(6,-1,5,-1,30, 5, 3, 6, 8, 9, 8, 9, 8), comment.char = "",
-                                widths = c(6,-1,5,-45, 8, 9,-8, 9, 8), comment.char = "",
+                                widths = c(6,-1,5,-45, 8, 9,-8, 9, 8), 
+                                comment.char = "",
                                 col.names = c("USAF", "WBAN", "LAT", "LON", "BEGIN", "END"),
-                                # col.names = c("USAF", "WBAN", "STATION NAME", "CTRY", "ST", "CALL", "LAT", "LON", "ELEV(M)", "BEGIN", "END"),
-                                flush = TRUE, colClasses=c('USAF'='character', 'WBAN'='character'))
+                                flush = TRUE, 
+                                colClasses=c('USAF'='character', 'WBAN'='character'))
   noaa.sites <- na.omit(noaa.sites)
-  #narrow them down to those within 5 lats/longs
+  
+  # narrow them down to those within 5 lats/longs
   noaa.sites <- noaa.sites %>%
-    mutate(LAT = as.numeric(as.character(LAT))) %>%
-    mutate(LON = as.numeric(as.character(LON))) %>%
-    filter(LAT < (lat + 5) & LAT > (lat - 5) & LON < (lon + 5) & LON > (lon - 5))
-  #filter by coverage, order by distance
+    dplyr::mutate(LAT = as.numeric(as.character(LAT))) %>%
+    dplyr::mutate(LON = as.numeric(as.character(LON))) %>%
+    dplyr::filter(LAT < (lat + 5) & LAT > (lat - 5) & LON < (lon + 5) & LON > (lon - 5))
+  
+  # filter by coverage, order by distance
   pt1 <- cbind(rep(lon, length.out = length(noaa.sites$LAT)),
                rep(lat, length.out = length(noaa.sites$LAT)))
   pt2 <- cbind(noaa.sites$LON, noaa.sites$LAT)
@@ -188,6 +189,7 @@ FindandCollect_airpres = function(lat, lon, start_datetime, end_datetime) {
     } else {
       WBAN <- paste0(0,as.character(noaa.sites$WBAN[i]))
     }
+    
     y <- as.data.frame(matrix(NA, nrow = 1, ncol = 12))
     
     for(j in 1:length(yrs)){
@@ -206,7 +208,7 @@ FindandCollect_airpres = function(lat, lon, start_datetime, end_datetime) {
       if(length(which(!is.na(x$V7))) >= 0.9 * length(x$V7)) {
         available[j] <- TRUE
         y <- rbind(x,y)
-      }else {
+      } else {
         break #too many NAs, move to next station
       }
     }
@@ -233,8 +235,7 @@ FindandCollect_airpres = function(lat, lon, start_datetime, end_datetime) {
   xtmp = xx %>%
     dplyr::filter(DateTime_UTC>=daterng[1] & DateTime_UTC<=daterng[2]) %>%
     dplyr::mutate(air_mb = air_kPa*10) # convert to mbar
-  # select(xtmp, DateTime_UTC, air_kPa, air_temp)
-  # print(noaa.sites[k,])
+  
   return(select(xtmp, DateTime_UTC, air_mb, air_temp))
 }
 
@@ -264,7 +265,6 @@ prep_daily_discharge <- function(site_data, domain = 'neon') {
                      glue('data/sm_ready_dailyQ/{site}_daily_Q.csv'))
   }
 }
-
 
 get_neon_product <- function(product_codes = 'DP0.20288.001',
                              dest_fp = NULL, 
@@ -311,8 +311,7 @@ get_neon_product <- function(product_codes = 'DP0.20288.001',
     if(avail_sites_n == 0) {
       stop('no available sites')
     }
-    
-    
+
     # download product for each site
     writeLines(paste('\nquerying for NEON product code:', product_code,
                      '\n  total sites to query:', avail_sites_n))
@@ -370,8 +369,10 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
                    'and saving results at:\n', data_fp))
   
   for(product_code in first(product_codes)) {
+    
     # call to NEON for avilable data of code type
     avail_sets <- get_avail_neon_product_sets(product_code)[1,]
+    
     # sites form this record
     avail_sites <- unique(avail_sets$site_name)
     
@@ -384,8 +385,7 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
     if(avail_sites_n == 0) {
       stop('no available sites')
     }
-    
-    
+
     # download product for each site
     writeLines(paste('\nquerying for NEON product code:', product_code,
                      '\n  total sites to query:', avail_sites_n))
@@ -418,7 +418,7 @@ get_neon_site_data <- function(arg = 'details') {
   us_states <- USAboundaries::us_states()
   
   site_data <- macrosheds::ms_download_site_data() %>%
-    filter(domain == 'neon',
+    dplyr::filter(domain == 'neon',
            site_type == 'stream_gauge')
   
   site_geo <- site_data %>%
@@ -448,12 +448,13 @@ get_neon_site_data <- function(arg = 'details') {
 read_all_neon_feathers <- function(file_path, by_site = TRUE){
   
   if(by_site == TRUE){
-    
-    
+
     # full paht ot each NEON site directory in data location
     site_dirs <- list.files(file_path, full.names = TRUE)
+    
     # get full path of all files inside all NEON site directories
     neon_files <- list.files(site_dirs, full.names = TRUE)
+    
     # get just file names fpr each of these files
     file_names <- list.files(site_dirs)
     
@@ -462,22 +463,17 @@ read_all_neon_feathers <- function(file_path, by_site = TRUE){
     
     return(neon_list)
     
-  } else{
+  } else {
     
     neon_files <- list.files(file_path, full.names = TRUE, recursive = TRUE)
-    file_names <- str_split_fixed(neon_files, '.feather', n = Inf)[,1]
-    file_names <- str_split_fixed(file_names, '[/]', n = Inf)
+    file_names <- stringr::str_split_fixed(neon_files, '.feather', n = Inf)[,1]
+    file_names <- stringr::str_split_fixed(file_names, '[/]', n = Inf)
     inv_file_names <- file_names[,dim(file_names)[2]]
     site_name <- file_names[,dim(file_names)[2]-1]
     
     inv_file_names <- unique(inv_file_names)
     site_names <- unique(site_name)
-    
-    #categoricalCodes
-    #readme
-    #validation
-    #variables
-    
+
     data_files <-  inv_file_names[!grepl('categoricalCodes|readme|validation|variables', inv_file_names)]
     
     final_list <- list()
@@ -524,3 +520,47 @@ read_all_neon_feathers <- function(file_path, by_site = TRUE){
   
 }
 
+get_streampulse_data <- function(site_deets, 
+                                 site_data,
+                                 dest_fp = NULL) {
+  
+  # checking for user defined filepath
+  if(is.null(dest_fp)) {
+    dest_fp <- file.path(getwd(), 'data', 'raw', 'streampulse')
+  }
+  
+  if(!dir.exists(dest_fp)){
+    # create direcotry if doesnt exists
+    print(paste('Directory does not exist, creating directory here:', dest_fp))
+    dir.create(dest_fp)
+  }
+  
+  # loop to download and save data from streampulse ----
+  for(i in 1:nrow(site_deets)) {
+    
+    # define site codes and inputs parameters
+    site_code = dplyr::pull(site_deets, site_code)[i]
+    sp_code = dplyr::pull(site_deets, sp_code)[i]
+    
+    # define lat and long, based on NEON site data
+    long <- site_data %>%
+      dplyr::filter(site_code == !!site_code) %>%
+      dplyr::pull(longitude)
+    
+    lat <- site_data %>%
+      dplyr::filter(site_code == !!site_code) %>%
+      dplyr::pull(latitude)
+    
+    # request data from streampulse
+    # each NEON site has temperature and DO data at 15 minute intervals
+    streampulse_data = try({
+      StreamPULSE::request_data(sitecode = sp_code)
+    })
+    
+    print(paste('downloading', site_code, 'data from streampulse'))
+    file_path <- glue::glue('data/raw/streampulse/{site_code}.csv')
+
+    readr::write_csv(streampulse_data$data, file_path)
+  } # end for loop
+  
+} # end function

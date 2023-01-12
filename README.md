@@ -6,15 +6,14 @@ At the coarsest description, these functions execute discrete steps to get data 
 
 ## Install and load
 
-`devtools::install_github(duke-bgc-lab/neonMetabolismHelpers)`
-
-`library(neonMetabolismHelpers)`
+    devtools::install_github(duke-bgc-lab/neonMetabolismHelpers)
+    library(neonMetabolismHelpers)
 
 ## Naming conventions
 
 ### Function names
 
-All functions in this package use the prefix nmh\_, which is a pseudo-acronym for neonMetabolismHelpers. Following this prefix is a verb (e.g. `nhm_get_`, `nhm_prep_`, `nhm_model_`, etc.) that specifies what is happening in that function. `nmh_get_` means data is being acquired from NEON or elsewhere to fill gaps in the NEON data. `nmh_prep_` prepares either input time series data or model designations.
+All functions in this package use the prefix `nmh_`, which is a pseudo-acronym for neonMetabolismHelpers. Following this prefix is a verb (e.g. `nhm_get_`, `nhm_prep_`, `nhm_model_`, etc.) that specifies what is happening in that function. `nmh_get_` means data is being acquired from NEON or elsewhere to fill gaps in the NEON data. `nmh_prep_` prepares either input time series data or model designations.
 
 ### Modeling types
 
@@ -34,14 +33,14 @@ The following functions obtain data requisite to model stream metabolism. The re
 
 -   dates to download data from with the `date_range = ...` argument
 
-The default for is to download all possible data, which may take quite a long time, so be careful! The raw data will be downloaded into a new directory called data/raw, and subdirectories for each Data Product Name (see below), and for each DP specified by site (e.g. data/raw/Continuous discharge/ARIK).
+The default for is to download all possible data, which may take quite a long time, so be careful! The raw data will be downloaded into a new directory called data/raw, and sub-directories for each Data Product Name (see below), and for each DP specified by site (e.g. data/raw/Continuous discharge/ARIK).
 
-| Variable(s)                         | NEON Data Product Code | NEON Data Product Name                               |
+| Variable(s)                         | NEON Data Product Code                                                                                                                                                           | NEON Data Product Name                               |
 |----------------------------|----------------------|----------------------|
-| Discharge                           | DP4.00130.001          | Continuous discharge                                 |
-| Light                               | DP1.20042.001          | Photosynthetically active radiation at water surface |
-| Barometric pressure                 | DP1.00004.001          | Barometric pressure                                  |
-| Water temperature, Dissolved oxygen | DP.202288.001          | Water quality                                        |
+| Discharge                           | [DP4.00130.001](https://data.neonscience.org/data-products/DP4.00130.001#:~:text=NEON%20calculates%20continuous%20stream%20discharge,Elevation%20of%20surface%20water%2C%20DP1.) | Continuous discharge                                 |
+| Light                               | [DP1.20042.001](https://data.neonscience.org/data-products/DP1.20042.001)                                                                                                        | Photosynthetically active radiation at water surface |
+| Barometric pressure                 | [DP1.00004.001](https://data.neonscience.org/data-products/DP1.00004.001)                                                                                                        | Barometric pressure                                  |
+| Water temperature, Dissolved oxygen | [DP.202288.001](https://data.neonscience.org/data-products/DP1.20288.001)                                                                                                        | Water quality                                        |
 
 Alternatively, `nmh_get_neon_data()` can be used to download any NEON data product indiviudally with the same site and date range arguments; this is effectively a wrapper around `neonUtilities::loadByProduct()` .
 
@@ -70,27 +69,79 @@ Next, discharge is added to the time series. Depending on the source of discharg
 
 Finally, light is added to the time-series. If light exists from NEON, those 1 minute data are added the 15 sum of PAR. In addition, the timestamp in UTC is converted to `solar.time` using `streamMetabolizer::convert_UTC_to_solartime(…, type = 'mean')`. If no light data exist, light is estimated using `streamMetabolizer::calc_light()` and the latitude + longitude of each site. At this final step in building the time series, depth is estimated using `streamMetabolizer::calc_depth(…, c = 0.409, f = 0.294)` . This approximates mean depth of the upstream reach from the sensor based on values from hydraulic scaling coefficients estimated in [Raymond et al. (2012)](https://aslopubs.onlinelibrary.wiley.com/doi/10.1215/21573689-1597669) for the continental US. At writing (2023-01-11), this is the easiest way to approximate mean depth for sites across the US, but is by no means the only way to do this.
 
-As with the raw data, this function writes these output csv files into a directory. In the same data folder where the raw data are saved, each site csv are saved to `data/sm_input/`, and depending on the discharge data used, the next directory will be raw, qaqc, or simulation. Each file will be saved as `{site}{qtype}_smReady.csv` (e.g. `data/sm_input/raw/ARIK_raw_smReady.csv`)
+As with the raw data, this function writes these output csv files into a directory. In the same data folder where the raw data are saved, each site csv are saved to `data/sm_input/`, and depending on the discharge data used, the next directory will be raw, qaqc, or simulation. Each file will be saved as `{site}_{qtype}_smReady.csv` (e.g. `data/sm_input/raw/ARIK_raw_smReady.csv`)
+
+### Plot time-series \*this function is incomplete (1/12/23)
+
+`nmh_plot_metab_inputs()` will plot the input time series and allow a comparison between different q_types included by the user. These files will be saved to a new directory `figures/sm_input/` .
 
 ## Define gas exchange-discharge relationship
 
-We will first run the time-series model to estimate and define a gas exchange-discharge relationship for each site (k600 \~ Q). This is handled in the function `nmh_model_metab_mle()` .
+We will first run the time-series model to estimate and define a gas exchange-discharge relationship for each site (K600 \~ Q). This is handled in the function `nmh_model_metab_mle()` .
 
 The inputs for this function are the directory of the prepared time series. Within the function, we define the model name and specifications as a wrapper around `streamMetabolizer::mm_name()` and `streamMetabolizer::specs()`. More details about these functions can be found in [Appling et al. (2018)](https://www.nature.com/articles/sdata2018292) and the [streamMetabolizer repository](https://github.com/USGS-R/streamMetabolizer).
 
-Models are run for each site-year (e.g. ARIK-2018, ARIK-2019, etc.). Output data from the model is stored in a new folder: data/model_runs/{q_type}/. The output data include the model fits, the model specs, and the predicted sub-daily DO.
+Models are run for each site-year (e.g. ARIK-2018, ARIK-2019, etc.). Output data from the model is stored in a new folder: `data/model_runs/{q_type}/`. The output data include the model fits, the model specs, and the predicted sub-daily DO.
 
-There are internal checks and handling of each year time-series and model building that are populated in a csv output to data/model_runs/q_type/MLE/neon\_{q_type}\_MLE_results.csv. Each row has 5 columns: site, year, and Has Data (y/n), Fit Error (y/n), and Fit time (minutes).
+There are internal checks and handling of each year time-series and model building that are populated in a csv output to `data/model_runs/q_type/MLE/neon_{q_type}_MLE_results.csv`. Each row has 5 columns: site, year, and Has Data (y/n), Fit Error (y/n), and Fit time (minutes).
 
 The results of this process will become priors in the Bayesian model run. These priors are extracted using `nmh_eval_metab_mle()` . For each site-year a MLE model was fit, this function extracts the median K600 value, among other descriptive statistics, to use in the Bayesian model.
 
 ## Model metabolism
 
-[deets on model set-up and stuff; could some of this material be moved upstream of the model function?]
+-   Before modeling, the following two functions should be run.
+
+    -   `nmh_prep_bayes_model()` : checks for installation of `streamMetabolizer` v0.12.0 and `rstan`. If those packages are not installed, it will do so.
+
+    -   `nmh_prep_site_year()`: Create a data frame with each site-year intended to model that is looped over in the model function. This function returns a data frame `site_years` directly to the environment
+
+        -   `years = c('2016', '2021')` : specify the range of years intended to use. 2016 and 2021 are the defaults
+
+        -   `site = 'all'` : this calls `get_neon_site_data()` to obtain all 27 sites, but can be subset to a string of the desired sites (e.g. `site = c('ARIK', 'FLNT')` )
+
+The function that runs the model, `nmh_model_metab_bayes()`, is extensive and is broken into XX steps, which we summarize here. All of these processes are handled within the function and rely on the suggested directory structure presented above.
+
+-   Step 0: Tracking system
+
+    -   For each site year, a tracker text file is written. This file records important meta-data and system information and tracks the results of the subsequent steps. Tracker files are written to `data/model_runs/{q_type}/Bayes/trackers`
+
+-   Step 1: Data checking
+
+    -   The models are run for each unique site-year in a `for` loop and referenced in `nmh_prep_site_year()`. For each site-year, the data for a given site are read in and filtered to the given year of interest.
+
+    -   If there is no data for the specific site-year, the tracker file records there is no data and jumps to the next step in the loop. If there is data, a summary of the input data is run, calculating the % of NAs for each column in the input data file. This summary is printed to the tracker file
+
+    -   If there are sufficiently low NAs, the data is cleared to enter the model
+
+-   Step 2: Model name, priors, and specs
+
+    -   The model name is defined outside the for loop using `streamMetabolizer::mm_name()` , though the specific arguments we recommend not changing.
+
+    -   Gas exchange-discharge priors are defined by reading in the results of `nmh_model_metab_mle()` and filtering to the site-year of interest. Details on these priors can be found in the "Metabolism model configuration and application" section in [Appling et al. (2018)](10.1038/sdata.2018.292).
+
+    -   Priors are passed to `streamMetabolizer::specs()` with additional arguments we recommend not changing. If there is an error in defining these specs, an error is flagged in the tracking file. Otherwise, the specs are ready to be input to the model
+
+-   Step 3: Running the model
+
+    -   The model is run by `streamMetabolizer::metab()` with inputs the time-series data (Step 1) and the specs (Step 2)
+
+    -   If there is an error in fitting the model, a flag is recorded in the tracker file and internal log matrix. If the model run successfully, the time to run the model is recorded in the internal log matrix
+
+-   Step 4: Saving the outputs
+
+    -   The function records 6 outputs from `streamMetabolizer::metab()` : daily, overall, KQ_overall, specs, datadaily, mod_and_obs_DO. Each of these become a subdirectory in `data/model_runs/` and a csv for each site-year is written to each folder after successfully model run.
+
+-   Step 5: Printing and saving the internal log matrix
+
+    -   The internal log matrix, which serves as the data frame that is looped around, is printed with a brief summary of the information stored in the tracker files. This is written to `data/model_runs/{q_type}/Bayes/neon_bayes_row.csv` .
 
 We highly recommend running the Bayesian models in parallel when possible. The models take a very long time to fit and converge and `nmh_model_metab_bayes()` takes advantage of parallelization. Below is example code to run the model in parallel that should be run each time, including and especially the `stopCluster()`, even if the model run was incomplete.
 
-    # Run before modeling
+    # Before modeling
+
+    nmh_prep_bayes_model()  # check installation of streamMetabolizer and rstan
+    nmh_prep_site_years()   # create data.frame of site years to loop around
+
     library(foreach) 
     library(doParallel)
 
@@ -109,7 +160,7 @@ We highly recommend running the Bayesian models in parallel when possible. The m
     # Run the model
     nmh_model_metab_bayes()
 
-    # Run after the model
+    # After the model
     stopCluster(cl)
     unregister_dopar <- function() {
         env <- foreach:::.foreachGlobals
@@ -121,7 +172,7 @@ We highly recommend running the Bayesian models in parallel when possible. The m
 
 The following functions exist to parse and return an object of high confidence metabolism estimates.
 
--   `nmh_diagnose_metab_bayes()` extracts MCMC convergence of site-year models and the "real-world" results from each year (number of days GPP \> -0.5 g $$O_2$$ m^-2^ d^-1^ or ER \< 0.5 g $$O_2$$ m^-2^ d^-1^).
+-   `nmh_diagnose_metab_bayes()` extracts MCMC convergence of site-year models and the "real-world" results from each year (number of days GPP \> -0.5 g O2 m^-2^ d^-1^ or ER \< 0.5 g O2 m^-2^ d^-1^).
 
 -   `nmh_estimate_metab_bayes()` returns "real-world" results with confidence bounds for GPP and ER, as well as model convergence stats, merged with relevant data from the input time series (e.g. DO min/max/range, mean depth, mean discharge, light inputs) and combines all sites into a single csv file.
 

@@ -414,10 +414,11 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
 }
 
 get_neon_site_data <- function(arg = 'details') {
+  
   # create the site codes
   us_states <- USAboundaries::us_states()
   
-  site_data <- macrosheds::ms_download_site_data() %>%
+  site_data <- macrosheds::ms_download_site_data() %>% 
     dplyr::filter(domain == 'neon',
            site_type == 'stream_gauge')
   

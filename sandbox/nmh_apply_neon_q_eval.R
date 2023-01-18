@@ -1,4 +1,4 @@
-nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw', site = NULL,
+nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw/neon', write_dir = 'data/munged', site = NULL,
                               qaqc_keep = c('Tier1', 'Tier2'), q_write = FALSE) {
 
   if(is.null(site)) {
@@ -9,10 +9,10 @@ nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw', 
     tryCatch(
       expr = {
         q_dir <- file.path(dir, 'Continuous discharge')  # Discharge from NEON
-        writeLines(glue('looking for {site} discharge data at {q_dir}'))
+        writeLines(glue::glue('looking for {site} discharge data at {q_dir}'))
 
         # fault tolerance: did the data load?
-        discharge <- read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather'))
+        q_df <- feather::read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather'))
       },
       error = function(e) {
         stop('must supply NEON raw continous discharge data as df or in dir filepath')
@@ -46,17 +46,22 @@ nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw', 
   q_evaluated <- discharge %>%
     merge(q_eval_bysite)
 
-  # checks``
+  # checks
   qaqc_check <- unique(q_evaluated$month_year) %in% unique(q_eval_bysite$month_year)
 
   if(FALSE %in% qaqc_check) {
     stop('QAQC failed somehow, check q_eval and q_df input data')
   }
 
+  if(nrow(q_evaluated) == 0) {
+    writeLines(paste0('no discharge data returned which passed QAQC evaluation, returning empty dataframe'))
+    return(q_evaluated)
+  }
+
   if(q_write == FALSE) {
     return(q_evaluated)
   } else {
-    q_eval_fp <- file.path(dir, 'q_eval.csv')
+    q_eval_fp <- file.path(write_dir, 'q_eval_data.csv')
     writeLines(paste('writing evaluated discharge file to', q_eval_fp))
     write.csv(q_evaluated, q_eval_fp)
   }

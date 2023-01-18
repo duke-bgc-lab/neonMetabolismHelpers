@@ -9,7 +9,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
     if(!dir.exists(dest_fp)){
         # create direcotry if doesnt exists
         print(paste('Directory does not exist, creating directory here:', dest_fp))
-        dir.create(dest_fp)
+        dir.create(dest_fp, recursive = TRUE)
     }
 
     # default is to retrieve all data necessary for NEON metabolism, this is
@@ -21,10 +21,15 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
     products_n = length(product_codes)
     writeLines(paste('retrieving NEON data for', products_n, 'data products'))
 
+
+
     for(product_code in product_codes) {
+      if(product_code == 'DP4.00130.001' & !q_type %in% c('qaqc', 'raw', 'simulated')){
+        stop("invalid q_type selection, must be 'raw' 'qaqc' or 'simulated'")
+      }
 
       if(product_code == 'DP4.00130.001' & q_type == 'qaqc'){
-        neon_eval_q_dir <- file.path('data/raw/qaqc/')
+        neon_eval_q_dir <- file.path('data/raw/macrosheds/qaqc/')
         neon_eval_q_fn <- 'neon_q_eval.csv'
         neon_eval_q_fp <- file.path(neon_eval_q_dir, neon_eval_q_fn)
 
@@ -35,10 +40,32 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
       # if the product is discharge and the q_type is simulated
       if(product_code == 'DP4.00130.001' & q_type == 'simulated'){
         # get simulated discharge
+        qsim <- try(
+          nmh_get_neon_Q_sim()
+        )
+
+        if(inherits(qsim, 'try-error')) {
+            stop(paste('q simulation data download failed, try anohter q type'))
+        } else {
+            # Create the file path for where the files will be saved. This can be changed
+            # if you  want to save the files in a different location
+            raw_qsim_dest <- file.path(dest_fp, 'macrosheds', 'simulated')
+            raw_qsim_fp <- paste0(raw_qsim_dest, '/q_simulation.csv')
+
+            if(!dir.exists(raw_qsim_dest)){
+                # create direcotry if doesnt exists
+                print(paste('Directory does not exist, creating directory here:', raw_qsim_dest))
+                dir.create(raw_qsim_dest, recursive = TRUE)
+            }
+
+            writeLines(paste('download simulated NEON q data to:\n', "    ", raw_qsim_fp))
+            write.csv(qsim, raw_qsim_fp)
+        }
+
       } else {
         # get NEON product name, used for filepath
         product_name <- neonUtilities::getProductInfo(product_code)$productName
-        data_fp <- file.path(dest_fp, product_name)
+        data_fp <- file.path(dest_fp, 'neon', product_name)
 
         writeLines(paste('retrieving NEON product:', product_name,
                      'and saving results at:\n', data_fp))
@@ -120,7 +147,9 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
             if(product_code == 'DP4.00130.001' & q_type == 'qaqc'){
               nmh_apply_neon_q_eval(
                 q_eval = neon_eval_q_df,
-                dir = 'data/raw',
+                q_df = NULL,
+                dir = 'data/raw/neon',
+                write_dir = 'data/munged',
                 site = site_name,
                 q_write = TRUE
                 )

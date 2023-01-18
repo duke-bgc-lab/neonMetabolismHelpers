@@ -1,8 +1,8 @@
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
-                           type = c('raw','qaqc', 'simulation')) {
+                           type = c('raw','qaqc', 'simulated')) {
   
-  if(!type %in% c('raw','qaqc', 'simulation')) {
-    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
+  if(!type %in% c('raw','qaqc', 'simulated')) {
+    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
   }
   
   # TODO: how does sourcing nmh_internals.R work? Is the following line necessary?
@@ -15,7 +15,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
   }
   
   # get the simulated Q data from MacroSheds portal
-  if(type == 'simulation') {
+  if(type == 'simulated') {
     neon_Q_sim <- get_neon_q_simulated()
   }
   
@@ -141,7 +141,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge/1000, na.rm = TRUE))
     }
     
-    if(type == 'source') {
+    if(type == 'qaqc') {
       # append discharge data
       # read in discharge file
       raw_Q <- try(feather::read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather')))
@@ -206,7 +206,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
     }
     
-    if(type == 'simulation') {
+    if(type == 'simulated') {
       q_final <- neon_Q_sim %>%
         dplyr::rename(site_id = site) %>%
         dplyr::filter(site == site_id) %>%

@@ -99,7 +99,7 @@ The results of this process will become priors in the Bayesian model run. These 
 
         -   `site = 'all'` : this calls `get_neon_site_data()` to obtain all 27 sites, but can be subset to a string of the desired sites (e.g. `site = c('ARIK', 'FLNT')` )
 
-The function that runs the model, `nmh_model_metab_bayes()`, is extensive and is broken into XX steps, which we summarize here. All of these processes are handled within the function and rely on the suggested directory structure presented above.
+The function that runs the model, `nmh_model_metab_bayes()`, is extensive and is broken into 5 steps, which we summarize here. All of these processes are handled within the function and rely on the suggested directory structure presented above.
 
 -   Step 0: Tracking system
 

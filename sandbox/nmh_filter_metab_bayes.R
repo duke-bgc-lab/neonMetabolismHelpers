@@ -1,11 +1,11 @@
 nmh_filter_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                   type = c('raw', 'qaqc', 'simulation')) {
+                                   q_type = c('raw', 'qaqc', 'simulated')) {
   
   
-  est_dir <- glue::glue(mod_dir, type, '/Bayes/')
+  est_dir <- glue::glue(mod_dir, q_type, '/Bayes/')
   
-  est <- readr::read_csv(glue::glue(est_dir, 'NEON_metab_{type}_estimates.csv'))
-  diags <- readr::read_csv(glue::glue(est_dir, 'diag_neon_metab_{type}.csv'))
+  est <- readr::read_csv(glue::glue(est_dir, 'NEON_metab_{q_type}_estimates.csv'))
+  diags <- readr::read_csv(glue::glue(est_dir, 'diag_neon_metab_{q_type}.csv'))
   
   good_site_years <- diags %>%
     dplyr::filter(n_days > 365*0.6,
@@ -31,6 +31,6 @@ nmh_filter_metab_bayes <- function(mod_dir = 'data/model_runs/',
     dir.create(write_dir)
   
   readr::write_csv(good_est,
-                   glue::glue('data/filtered_estimates/neon_metab_filt_{type}.csv'))
+                   glue::glue('data/filtered_estimates/neon_metab_filt_{q_type}.csv'))
   
 } # end function

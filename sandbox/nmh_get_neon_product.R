@@ -1,5 +1,5 @@
-nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = NULL,
-                              site_filter = NULL, startdate = NA, enddate = NA) {
+get_neon_product <- function(product_codes = 'DP0.20288.001',
+                             dest_fp = NULL, site_filter = NULL) {
 
     # checking for user defined filepath
     if(is.null(dest_fp)) {
@@ -12,36 +12,11 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
         dir.create(dest_fp)
     }
 
-    # default is to retrieve all data necessary for NEON metabolism, this is
-    if(product_codes == 'all') {
-      # products are: discharge, light, barometric pressure, water temp & dissolved oxygen
-      product_codes <- c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP.202288.001')
-    }
-
-    products_n = length(product_codes)
-    writeLines(paste('retrieving NEON data for', products_n, 'data products'))
-
     for(product_code in product_codes) {
-
-      if(product_code == 'DP4.00130.001' & q_type == 'qaqc'){
-        neon_eval_q_dir <- file.path('data/raw/qaqc/')
-        neon_eval_q_fn <- 'neon_q_eval.csv'
-        neon_eval_q_fp <- file.path(neon_eval_q_dir, neon_eval_q_fn)
-
-        # downloads q_eval and saves as df
-        neon_eval_q_df <- nmh_get_neon_q_eval(dest_fp = neon_eval_q_dir, dest_fn = neon_eval_q_fn)
-      } # end evaluate q conditional
-
-      # if the product is discharge and the q_type is simulated
-      if(product_code == 'DP4.00130.001' & q_type == 'simulated'){
-        # get simulated discharge
-      } else {
         # get NEON product name, used for filepath
         product_name <- neonUtilities::getProductInfo(product_code)$productName
         data_fp <- file.path(dest_fp, product_name)
-
-        writeLines(paste('retrieving NEON product:', product_name,
-                     'and saving results at:\n', data_fp))
+        products_n = length(product_codes)
 
         if(!dir.exists(data_fp)){
             # create direcotry if doesnt exists
@@ -49,7 +24,8 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
             dir.create(data_fp)
         }
 
-        writeLines(paste('checking available NEON sites with data for product', product_name))
+        writeLines(paste('retrieving NEON data for', products_n, 'data products',
+                         'and saving results at:\n', data_fp))
 
         # call to NEON for avilable data of code type
         avail_sets <- get_avail_neon_product_sets(product_code)
@@ -65,12 +41,12 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
         avail_sites_n <- length(avail_sites)
         if(avail_sites_n == 0) {
             stop('no available sites')
-        } else {
-          # download product for each site
-          writeLines(paste('\nquerying for NEON product code:', product_code,
-                           '\n  total sites to query:', avail_sites_n))
         }
 
+
+        # download product for each site
+        writeLines(paste('\nquerying for NEON product code:', product_code,
+                         '\n  total sites to query:', avail_sites_n))
 
         for(j in 1:length(avail_sites)){
             writeLines(paste('  querying site', j, 'of', avail_sites_n))
@@ -85,20 +61,14 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
                     data_pile <- neonUtilities::loadByProduct(dpID = product_code,
                                                               site = site_name,
                                                               package='basic',
-                                                              check.size=FALSE,
-                                                              startdate = startdate,
-                                                              enddate = enddate
-                                                              )
+                                                              check.size=FALSE)
                 },
                 error = function(e) {
                     writeLines(paste('ERROR at', site_name, 'trying again with expanded package'))
                     data_pile <- try(neonUtilities::loadByProduct(dpID = product_code,
                                                                   site = site_name,
                                                                   package='expanded',
-                                                                  check.size=FALSE,
-                                                                  startdate = startdate,
-                                                                  enddate = enddate
-                                                                  ))
+                                                                  check.size=FALSE))
 
                 }
             )
@@ -115,20 +85,6 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
                 # in the file path raw_data_dest
                 serialize_list_to_dir(data_pile, raw_data_dest)
             }
-
-            # run this to make a new evaluated Q folder for each site
-            if(product_code == 'DP4.00130.001' & q_type == 'qaqc'){
-              nmh_apply_neon_q_eval(
-                q_eval = neon_eval_q_df,
-                dir = 'data/raw',
-                site = site_name,
-                q_write = TRUE
-                )
-            } # end evaluate q conditional
-
-        } # end available sites loop
-
-      } # end 'if simulated discharge' conditional
-    } # end product loop
+        }
+    }
 }
-# nmh_get_neon_data(product_codes = 'DP4.00130.001', q_type = 'raw', site_filter = 'ARIK', startdate = '2017-01', enddate = '2017-12')

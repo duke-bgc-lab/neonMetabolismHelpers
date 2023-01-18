@@ -1,7 +1,7 @@
 nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
-                               type = c('raw', 'source', 'simulation')) {
+                               q_type = c('raw', 'source', 'simulated')) {
   
-  dir_type <- glue::glue(dir, type)
+  dir_type <- glue::glue(dir, q_type)
   
   dir_fits <- glue::glue(dir_type, '/MLE/dat_fit')
   
@@ -64,6 +64,6 @@ nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
   } # end for loop
   
   readr::write_csv(mle_diagnostic,
-                   glue::glue(dir_type, '/MLE/MLE_{type}_diagnostics.csv'))
+                   glue::glue(dir_type, '/MLE/MLE_{q_type}_diagnostics.csv'))
   
 } # end function

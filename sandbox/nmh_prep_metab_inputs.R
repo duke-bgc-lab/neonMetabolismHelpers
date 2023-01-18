@@ -1,21 +1,26 @@
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
-                           type = c('raw','qaqc', 'simulation')) {
+                                  q_type = c('raw','qaqc', 'simulation'),
+                                  z_method = c('model', 'meas')) {
   
-  if(!type %in% c('raw','qaqc', 'simulation')) {
+  if(!q_type %in% c('raw','qaqc', 'simulation')) {
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
+  }
+  
+  if(!z_method %in% c('model', 'meas')){
+    stop('No mean depth method assigned, please select either \n "1) model: use values from Raymond et al. (2012)" or \n "2) meas: site-specific coefficients"')
   }
   
   # TODO: how does sourcing nmh_internals.R work? Is the following line necessary?
   source('sandbox/nmh_internals.R')
   
-  if(type == 'qaqc') {
+  if(q_type == 'qaqc') {
     # read in evaluation from Rhea et al. (accepted)
     # this function pulls the hydroshare dataset for Rhea et al. (in review)
     q_eval <- nmh_get_neon_Q_eval()
   }
   
   # get the simulated Q data from MacroSheds portal
-  if(type == 'simulation') {
+  if(q_type == 'simulation') {
     neon_Q_sim <- get_neon_q_simulated()
   }
   
@@ -122,7 +127,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     }
     
     # compile discharge data
-    if(type == 'raw') {
+    if(q_type == 'raw') {
       # read in discharge file
       discharge <- try(feather::read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather')))
       
@@ -141,7 +146,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge/1000, na.rm = TRUE))
     }
     
-    if(type == 'source') {
+    if(q_type == 'qaqc') {
       # append discharge data
       # read in discharge file
       raw_Q <- try(feather::read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather')))
@@ -206,13 +211,38 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
     }
     
-    if(type == 'simulation') {
+    if(q_type == 'simulation') {
       q_final <- neon_Q_sim %>%
         dplyr::rename(site_id = site) %>%
         dplyr::filter(site == site_id) %>%
         dplyr::mutate(Q_15min = Q_predicted/1000) %>%
         dplyr::select(DateTime_UTC = datetime,
                       Q_15min)
+    }
+    
+    if(z_method == 'model') {
+      c <- 0.409
+      f <- 0.294
+    }  
+    
+    if(z_method == 'meas') {
+      coefs <- readr::read_csv('data/NEON_site_scaling_coefs.csv')
+      
+      if(site %in% unique(coefs$site)) {
+        c <- coefs %>% 
+          dplyr::filter(!!site == site) %>% 
+          dplyr::select(c) %>% 
+          dplyr::pull()
+        
+        f <- coefs %>% 
+          dplyr::filter(site %in% !!site) %>% 
+          dplyr::select(f) %>% 
+          dplyr::pull()
+      } else {
+        cat(glue::glue('No hydraulic scaling available at {site}\n Using default values c = 0.409, f = 0.294'))
+        c <- 0.409
+        f <- 0.294
+      }
     }
     
     # compile the final output dataset
@@ -227,7 +257,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
                                                                                longitude = lon,
                                                                                time.type = 'mean'),
                       mean_depth = streamMetabolizer::calc_depth(Q_15min,                      # convert discharge to mean depth in the study reach; this uses hydraulic scaling coefficients from Leopold and Maddock 1953
-                                                                 c = 0.409, f = 0.294)) %>%    # coefficients from Raymond et al. 2012
+                                                                 c = c, f = f)) %>%    # coefficients from Raymond et al. 2012
         dplyr::select(solar.time,
                       DO.obs = DO_mgL,
                       DO.sat,
@@ -243,7 +273,8 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::arrange(DateTime_UTC) %>%                # sorts dates from old to new, for some reason merging put things out of order
         padr::pad('15 min') %>%
         dplyr::mutate(solar.time = streamMetabolizer::convert_UTC_to_solartime(DateTime_UTC,lon,'mean'),
-                      depth = streamMetabolizer::calc_depth(Q_15min),
+                      depth = streamMetabolizer::calc_depth(Q_15min,
+                                                            c = c, f = f),
                       light = streamMetabolizer::calc_light(solar.time, lat, lon)) %>%
         dplyr::select(solar.time,
                       DO.obs = DO_mgL,
@@ -255,14 +286,14 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     }
     
     # create the save directory if need be
-    if(!dir.exists(glue('data/sm_input/{type}'))){
+    if(!dir.exists(glue('data/sm_input/{q_type}'))){
       print('Directory does not exist, creating now')
-      dir.create(glue('data/sm_input/{type}'))
+      dir.create(glue('data/sm_input/{q_type}'))
     }
     
     # write a CSV file for each site
     readr::write_csv(out,
-                     glue::glue('data/sm_input/{type}/{site}_{type}_smReady.csv'))
+                     glue::glue('data/sm_input/{q_type}/{site}_{q_type}_smReady.csv'))
   } # end for loop
   
 } # end function

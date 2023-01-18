@@ -32,9 +32,16 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
   
   # specify directories where the raw data is saved
   sp_dir <- glue::glue(dir, '/streampulse')          # DO and temperature data, from streampulse
-  q_dir <- glue::glue(dir, '/Continuous discharge')  # Discharge from NEON
+  q_dir <- glue::glue(dir, 'neon', '/Continuous discharge')  # default to raw discharge from NEON
   bp_dir <- glue::glue(dir, '/Barometric pressure')  # Barometric pressure from NEON
   light_dir <- glue::glue(dir, '/Photosynthetically active radiation at water surface/') # PAR from NEON
+  
+  # q_dir is different based on "q type"
+  if(q_type == 'simulated') {
+    q_dir <- file.path(dir, 'macrosheds', 'simulated')  # Discharge from NEON Q simulations from MacroSheds scientist Mike Vlah
+  } else if(q_type == 'qaqc') {
+    q_dir <- file.path('data, 'munged', 'qaqc')  # Discharge filtered via NEON Q evaluation from Rhea et al. 2023
+  }
   
   # for loop across each site
   # this will manipulate data at the site level within the function
@@ -133,7 +140,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
       
       # fault tolerance: did the data load?
       if(inherits(discharge, 'try-error')) {
-        print(paste0(site, ' failed to load discharge'))
+        print(paste0(site, ' failed to load raw NEON discharge'))
         next
       }
       
@@ -153,7 +160,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
       
       # fault tolerance: did the data load?
       if(inherits(raw_Q, 'try-error')) {
-        print(paste0(site, ' failed to load discharge'))
+        print(paste0(site, ' failed to load Rhea QAQC NEON discharge'))
       }
       
       # TOMB uses USGS discharge data, we'll call dataRetrival to access those data

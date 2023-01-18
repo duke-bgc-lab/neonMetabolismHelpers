@@ -1,21 +1,21 @@
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
-                           type = c('raw','qaqc', 'simulated')) {
+                           q_type = c('raw','qaqc', 'simulated')) {
   
-  if(!type %in% c('raw','qaqc', 'simulated')) {
+  if(!q_type %in% c('raw','qaqc', 'simulated')) {
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
   }
   
   # TODO: how does sourcing nmh_internals.R work? Is the following line necessary?
   source('sandbox/nmh_internals.R')
   
-  if(type == 'qaqc') {
+  if(q_type == 'qaqc') {
     # read in evaluation from Rhea et al. (accepted)
     # this function pulls the hydroshare dataset for Rhea et al. (in review)
     q_eval <- nmh_get_neon_Q_eval()
   }
   
   # get the simulated Q data from MacroSheds portal
-  if(type == 'simulated') {
+  if(q_type == 'simulated') {
     neon_Q_sim <- get_neon_q_simulated()
   }
   
@@ -122,7 +122,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     }
     
     # compile discharge data
-    if(type == 'raw') {
+    if(q_type == 'raw') {
       # read in discharge file
       discharge <- try(feather::read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather')))
       
@@ -141,7 +141,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge/1000, na.rm = TRUE))
     }
     
-    if(type == 'qaqc') {
+    if(q_type == 'qaqc') {
       # append discharge data
       # read in discharge file
       raw_Q <- try(feather::read_feather(glue::glue(q_dir, '/{site}/csd_continuousDischarge.feather')))
@@ -206,7 +206,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
     }
     
-    if(type == 'simulated') {
+    if(q_type == 'simulated') {
       q_final <- neon_Q_sim %>%
         dplyr::rename(site_id = site) %>%
         dplyr::filter(site == site_id) %>%
@@ -255,14 +255,14 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     }
     
     # create the save directory if need be
-    if(!dir.exists(glue('data/sm_input/{type}'))){
+    if(!dir.exists(glue('data/sm_input/{q_type}'))){
       print('Directory does not exist, creating now')
-      dir.create(glue('data/sm_input/{type}'))
+      dir.create(glue('data/sm_input/{q_type}'))
     }
     
     # write a CSV file for each site
     readr::write_csv(out,
-                     glue::glue('data/sm_input/{type}/{site}_{type}_smReady.csv'))
+                     glue::glue('data/sm_input/{q_type}/{site}_{q_type}_smReady.csv'))
   } # end for loop
   
 } # end function

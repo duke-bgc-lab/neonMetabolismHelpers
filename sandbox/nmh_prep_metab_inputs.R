@@ -237,7 +237,12 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     if(z_method == 'meas') {
       coefs <- readr::read_csv('data/NEON_site_scaling_coefs.csv')
       
-      if(site %in% unique(coefs$site)) {
+      good_fits <- coefs %>% 
+        dplyr::filter(r2_depth > 0.1) %>% 
+        dplyr::pull(site)
+      
+      if(site %in% good_fits) {
+        
         c <- coefs %>% 
           dplyr::filter(!!site == site) %>% 
           dplyr::select(c) %>% 
@@ -248,7 +253,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
           dplyr::select(f) %>% 
           dplyr::pull()
       } else {
-        cat(glue::glue('No hydraulic scaling available at {site}\n Using default values c = 0.409, f = 0.294'))
+        cat(glue::glue('No hydraulic scaling coefficients available at {site}\n Using default values c = 0.409, f = 0.294'))
         c <- 0.409
         f <- 0.294
       }

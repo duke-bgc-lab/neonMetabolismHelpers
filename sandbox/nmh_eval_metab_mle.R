@@ -1,5 +1,5 @@
 nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
-                               type = c('raw', 'source', 'simulation')) {
+                               type = c('raw', 'source', 'simulated')) {
   
   dir_type <- glue::glue(dir, type)
   

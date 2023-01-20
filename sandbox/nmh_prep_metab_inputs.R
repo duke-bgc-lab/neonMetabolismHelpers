@@ -144,6 +144,10 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         next
       }
       
+      if(site == 'TOMB'){
+        discharge <- nmh_get_tomb_q()
+      }
+      
       q_final <- discharge %>%
         dplyr::select(endDate,
                       maxpostDischarge) %>%

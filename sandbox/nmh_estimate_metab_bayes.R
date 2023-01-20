@@ -1,8 +1,8 @@
 nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                     type = c('raw', 'qaqc', 'simulation')) {
+                                     type = c('raw', 'qaqc', 'simulated')) {
   
-  if(!type %in% c('raw','qaqc', 'simulation')){
-    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
+  if(!type %in% c('raw','qaqc', 'simulated')){
+    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
   }
   
   file_dir <- glue::glue(mod_dir, type, '/Bayes/')

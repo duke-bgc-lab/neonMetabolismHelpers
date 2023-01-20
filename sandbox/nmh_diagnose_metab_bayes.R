@@ -1,5 +1,5 @@
 diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                      type = c('raw', 'qaqc', 'simulation')) {
+                                      type = c('raw', 'qaqc', 'simulated')) {
   
   mod_dir_type <- glue::glue(mod_dir, type)
   mod_dir_fits <- glue::glue(mod_dir_type,'/Bayes/daily')
@@ -77,7 +77,7 @@ diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
     } # end if statement
     
     res <- glue::glue(diff(DO$solar.time) %>%
-                        first(),
+                        dplyr::first(),
                       'min')
     
     dir_KQ <- glue::glue(mod_dir_type,'/Bayes/KQ_overall')
@@ -106,19 +106,19 @@ diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
       dplyr::pull(err_obs_iid_sigma_Rhat)
     
     out <- out %>%
-      add_row(site = site,
-              year = year,
-              n_days = days,
-              f_days = (days/365)*100,
-              resolution = res,
-              K600_daily_sigma_Rhat = K600_daily_sigma_Rhat,
-              err_obs_iid_sigma_Rhat = err_obs_iid_sigma_Rhat,
-              err_proc_iid_sigma_Rhat = err_proc_iid_sigma_Rhat,
-              K_median = K$K_median,
-              K_range = K$K_range,
-              neg_GPP = GPP_neg,
-              pos_ER = ER_pos,
-              ER_K_r2 = ER_K_r2)
+      dplyr::add_row(site = site,
+                     year = year,
+                     n_days = days,
+                     f_days = (days/365)*100,
+                     resolution = res,
+                     K600_daily_sigma_Rhat = K600_daily_sigma_Rhat,
+                     err_obs_iid_sigma_Rhat = err_obs_iid_sigma_Rhat,
+                     err_proc_iid_sigma_Rhat = err_proc_iid_sigma_Rhat,
+                     K_median = K$K_median,
+                     K_range = K$K_range,
+                     neg_GPP = GPP_neg,
+                     pos_ER = ER_pos,
+                     ER_K_r2 = ER_K_r2)
   } # end for loop
   
   readr::write_csv(out,

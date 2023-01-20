@@ -1,7 +1,7 @@
 nmh_get_scaling_coefs <- function(dest_fp = 'data/raw/macrosheds/', 
                                   dest_fn = 'neon_hyd_scaling_coefs.csv') {
-  destfile <- paste0(dest_fp, dest_fn)
   
+  destfile <- paste0(dest_fp, dest_fn)
   
   if(!dir.exists(dest_fp)){
     # create direcotry if doesnt exists

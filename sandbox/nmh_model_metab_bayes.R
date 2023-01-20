@@ -12,13 +12,13 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
   # changed as a last resort if the model just refuses to converge. i.e., if
   # we have to settle for a simpler model
   bayes_name_new = streamMetabolizer::mm_name(
-    type='bayes',
-    pool_K600='binned',
-    err_obs_iid=TRUE,
-    err_proc_iid=TRUE,
-    ode_method='trapezoid',
-    deficit_src='DO_mod',
-    engine='stan')
+    type = 'bayes',
+    pool_K600 = 'binned',
+    err_obs_iid = TRUE,
+    err_proc_iid = TRUE,
+    ode_method = 'trapezoid',
+    deficit_src = 'DO_mod',
+    engine = 'stan')
   
   # Define fault tolerances
   has_data <- TRUE
@@ -34,7 +34,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
   
   # run through sit years in parallel
   
-  neon_bayes_results <- foreach(m = 1:length(site_years$site),
+  neon_bayes_results <- foreach::foreach(m = 1:length(site_years$site),
                                 .combine = bind_rows,
                                 .packages = c('dplyr',
                                               'glue',
@@ -112,7 +112,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           
           # if the data exists, record to the tracker file that it was successful
           cat('Step_1_Success',
-              file=tracker_fp, sep = "\n", append=TRUE)
+              file = tracker_fp, sep = "\n", append=TRUE)
           
           # Step 2: filter data to the run year
           input_dat_sub <- input_dat %>%
@@ -122,12 +122,12 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           if(nrow(input_dat_sub) == 0){
             neon_bayes_row[1, 'Has Data'] <- FALSE
             cat('Step_2_Error',                            # write the success/fail to the tracker file
-                file=tracker_fp, sep = "\n", append=TRUE)
+                file = tracker_fp, sep = "\n", append=TRUE)
             # next
           } else {
             neon_bayes_row[1, 'Has Data'] <- TRUE
             cat('Step_2_Success',                          # write the success/fail to the tracker file
-                file=tracker_fp, sep = "\n", append=TRUE)
+                file = tracker_fp, sep = "\n", append=TRUE)
           }
 
           # Step 3: check that input data is good (not all NAs)
@@ -154,15 +154,15 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
             
             # if the ratio is 100% NAs, record that in the tracker file and jump to the next
             if(ratio == min_ratio) {
-              cat('Step_3_Error', file=tracker_fp, sep = "\n", append=TRUE)
+              cat('Step_3_Error', file = tracker_fp, sep = "\n", append=TRUE)
               cat(glue::glue('---- ', '{site_id} has no {var} data, jumping to next site-year'),
-                  file=tracker_fp, sep = "\n", append=TRUE)
+                  file = tracker_fp, sep = "\n", append=TRUE)
               writeLines(glue::glue('{site_id} has no {var} data, jumping to next site-year'))
             } else { # or keep going
               cat(glue::glue('Step_3_{i}_Success'),
-                  file=tracker_fp, sep = "\n", append=TRUE)
+                  file = tracker_fp, sep = "\n", append=TRUE)
               cat(glue::glue('---- ', '{site_id} has {round(as.numeric(ratio)*100,2)}% NA of {var} data'),
-                  file=tracker_fp, sep = "\n", append=TRUE)
+                  file = tracker_fp, sep = "\n", append=TRUE)
             }
           } # end for loop
           
@@ -216,11 +216,11 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           # record in the tracker if the model setup is successful, and if not, jump to the next run
           if(setup_err == TRUE) {
             neon_bayes_row[1, 'Setup Error'] <- TRUE
-            cat('Step_4_Error', file=tracker_fp, sep = "\n", append=TRUE)
+            cat('Step_4_Error', file = tracker_fp, sep = "\n", append=TRUE)
             next
           } else {
             neon_bayes_row[1, 'Setup Error'] <- FALSE
-            cat('Step_4_Success', file=tracker_fp, sep = "\n", append=TRUE)
+            cat('Step_4_Success', file = tracker_fp, sep = "\n", append=TRUE)
           }
           
           # Step 5: run the model

@@ -125,4 +125,5 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
                    glue::glue(mod_dir_type,'/Bayes/diag_neon_metab_{type}.csv'))
   
   return(out)
+  
 } # end function

@@ -1,16 +1,9 @@
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
-<<<<<<< HEAD:sandbox/nmh_prep_metab_inputs.R
-                                  q_type = c('raw','qaqc', 'simulation'),
+                                  q_type = c('raw','qaqc', 'simulated'),
                                   z_method = c('model', 'meas')) {
-  
-  if(!q_type %in% c('raw','qaqc', 'simulation')) {
-    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
-=======
-                           q_type = c('raw','qaqc', 'simulated')) {
   
   if(!q_type %in% c('raw','qaqc', 'simulated')) {
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
->>>>>>> 6bf61d478793dec815daeedae833e7f1090527d5:R/nmh_prep_metab_inputs.R
   }
   
   if(!z_method %in% c('model', 'meas')){
@@ -27,11 +20,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
   }
   
   # get the simulated Q data from MacroSheds portal
-<<<<<<< HEAD:sandbox/nmh_prep_metab_inputs.R
-  if(q_type == 'simulation') {
-=======
   if(q_type == 'simulated') {
->>>>>>> 6bf61d478793dec815daeedae833e7f1090527d5:R/nmh_prep_metab_inputs.R
     neon_Q_sim <- get_neon_q_simulated()
   }
   
@@ -235,11 +224,8 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
     }
     
-<<<<<<< HEAD:sandbox/nmh_prep_metab_inputs.R
-    if(q_type == 'simulation') {
-=======
+    
     if(q_type == 'simulated') {
->>>>>>> 6bf61d478793dec815daeedae833e7f1090527d5:R/nmh_prep_metab_inputs.R
       q_final <- neon_Q_sim %>%
         dplyr::rename(site_id = site) %>%
         dplyr::filter(site == site_id) %>%

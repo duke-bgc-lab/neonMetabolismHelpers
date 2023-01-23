@@ -1,11 +1,11 @@
 nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                     type = c('raw', 'qaqc', 'simulation')) {
+                                     q_type = c('raw', 'qaqc', 'simulated')) {
   
-  if(!type %in% c('raw','qaqc', 'simulation')){
-    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
+  if(!q_type %in% c('raw','qaqc', 'simulated')){
+    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
   }
   
-  file_dir <- glue::glue(mod_dir, type, '/Bayes/')
+  file_dir <- glue::glue(mod_dir, q_type, '/Bayes/')
   
   mod_dir <- glue::glue(file_dir, 'daily')
   
@@ -98,7 +98,7 @@ nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
       dir.create(write_dir)
     
     readr::write_csv(merged,
-                     glue::glue(write_dir, 'neon_metab_{type}_{site}_{year}.csv'))
+                     glue::glue(write_dir, 'neon_metab_{q_type}_{site}_{year}.csv'))
     
   } # end for loop
   
@@ -107,7 +107,7 @@ nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
                               readr::read_csv)
   
   readr::write_csv(estimates,
-                   glue::glue(file_dir, 'NEON_metab_{type}_estimates.csv'))
+                   glue::glue(file_dir, 'NEON_metab_{q_type}_estimates.csv'))
   
   return(estimates)
   

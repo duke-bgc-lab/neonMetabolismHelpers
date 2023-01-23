@@ -1,3 +1,4 @@
+#' @export
 nmh_get_neon_q_eval <- function(dest_fp = 'data/raw/qaqc/', dest_fn = 'neon_q_eval.csv') {
   destfile <- paste0(dest_fp, dest_fn)
   

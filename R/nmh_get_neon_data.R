@@ -1,3 +1,4 @@
+#' @export
 nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = NULL,
                               site_filter = NULL, startdate = NA, enddate = NA) {
 

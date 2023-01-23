@@ -1,3 +1,4 @@
+#' @export
 nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw/neon', write_dir = 'data/munged/qaqc', site = NULL,
                               qaqc_keep = c('Tier1', 'Tier2'), q_write = FALSE) {
 

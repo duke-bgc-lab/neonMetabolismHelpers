@@ -1,7 +1,7 @@
-diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                      type = c('raw', 'qaqc', 'simulated')) {
+nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
+                                          q_type = c('raw', 'qaqc', 'simulated')) {
   
-  mod_dir_type <- glue::glue(mod_dir, type)
+  mod_dir_type <- glue::glue(mod_dir, q_type)
   mod_dir_fits <- glue::glue(mod_dir_type,'/Bayes/daily')
   
   n_mods <- list.files(mod_dir_fits,

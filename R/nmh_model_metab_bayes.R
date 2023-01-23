@@ -1,7 +1,7 @@
 nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
-                                  type = 'raw') {
+                                  q_type = 'raw') {
   
-  if(!type %in% c('raw','source', 'simulation')){
+  if(!q_type %in% c('raw','source', 'simulated')){
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
   }
   
@@ -40,7 +40,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
                                               'glue',
                                               'lubridate')) %dopar% {
           print("_________________________________________________")
-          print(type)
+          print(q_type)
           print("_________________________________________________")
           
           # Step 0: define starting conditions and initiate tracker
@@ -50,7 +50,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           run_year <- site_years[m, 'year']
           
           # Define where the model outputs will be saved
-          write_dir = glue::glue('data/model_runs/{type}/Bayes')
+          write_dir = glue::glue('data/model_runs/{q_type}/Bayes')
           
           # and create the directory if it doesn't exist
           if(!dir.exists(write_dir))
@@ -71,7 +71,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           
           # create the file and write the meta-data for the model run
           cat(glue::glue("Tracker Log, R Session ID: {session_id}\n    datetime {session_date} {session_time}\n"), file=tracker_fp, sep="\n")
-          cat(glue::glue('site: {site_id} \n year: {run_year} \n discharge: {type}'), file=tracker_fp, sep = "\n", append=TRUE)
+          cat(glue::glue('site: {site_id} \n year: {run_year} \n discharge: {q_type}'), file=tracker_fp, sep = "\n", append=TRUE)
           
           # Step 1: read in data
           # create a matrix to track which site-years have a successful model run
@@ -99,7 +99,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           input_dat <- tryCatch({
             
             # read in site model input data
-            readr::read_csv(glue::glue(input_dir,'/{type}/{site_id}_{type}_smReady.csv'))
+            readr::read_csv(glue::glue(input_dir,'/{q_type}/{site_id}_{q_type}_smReady.csv'))
           },
           # fault tolerance if the file couldn't be read in; not, jump to the next site
           error = function(e) {
@@ -174,7 +174,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
             end_date <- lubridate::date(dplyr::last(input_dat_sub$solar.time))
             
             # read in results from MLE model run
-            mle_priors <- readr::read_csv(glue::glue('data/model_runs/{type}/MLE/MLE_{type}_diagnostics.csv'))
+            mle_priors <- readr::read_csv(glue::glue('data/model_runs/{q_type}/MLE/MLE_{q_type}_diagnostics.csv'))
             
             # subset to pull gas exchange results
             median_K600_mle <- mle_priors %>%

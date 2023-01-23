@@ -43,7 +43,7 @@ serialize_list_to_dir <- function(l, dest){
     if('data.frame' %in% elemclasses[[i]]){
       
       fpath = paste0(dest, '/', names(l)[i], '.feather')
-      write_feather(l[[i]], fpath)
+      feather::write_feather(l[[i]], fpath)
       
     } else if('character' %in% x){
       
@@ -61,7 +61,7 @@ read_neon_feathers <- function(file_path, by_site){
     
     file_names <- list.files(file_path)
     
-    neon_list <- lapply(neon_files, read_feather)
+    neon_list <- lapply(neon_files, feather::read_feather)
     
     names(neon_list) <- file_names
     
@@ -91,7 +91,7 @@ read_neon_feathers <- function(file_path, by_site){
                            i = data_files[i],
                            s = site_names[s])
         
-        one_site <- read_feather(path)
+        one_site <- feather::read_feather(path)
         
         all_files <- rbind(all_files, one_site)
       }
@@ -112,7 +112,7 @@ read_neon_feathers <- function(file_path, by_site){
                          i = meta_data_files[i],
                          s = site_names[1])
       
-      meta_file <- read_feather(path)
+      meta_file <- feather::read_feather(path)
       
       meta_list <- list(meta_file)
       names(meta_list) <- meta_data_files[i]
@@ -127,7 +127,7 @@ get_avail_neon_product_sets <- function(prodcode_full){
   
   # returns a tibble with url, site_name, component columns
   
-  avail_sets = tibble()
+  avail_sets = tibble::tibble()
   
   req = httr::GET(paste0("http://data.neonscience.org/api/v0/products/",
                          prodcode_full))
@@ -459,7 +459,7 @@ read_all_neon_feathers <- function(file_path, by_site = TRUE){
     # get just file names fpr each of these files
     file_names <- list.files(site_dirs)
     
-    neon_list <- lapply(neon_files, read_feather)
+    neon_list <- lapply(neon_files, feather::read_feather)
     names(neon_list) <- file_names
     
     return(neon_list)
@@ -488,7 +488,7 @@ read_all_neon_feathers <- function(file_path, by_site = TRUE){
                      i = data_files[i],
                      s = site_names[s])
         
-        one_site <- read_feather(path)
+        one_site <- feather::read_feather(path)
         
         all_files <- rbind(all_files, one_site)
       }
@@ -509,7 +509,7 @@ read_all_neon_feathers <- function(file_path, by_site = TRUE){
                    i = meta_data_files[i],
                    s = site_names[1])
       
-      meta_file <- read_feather(path)
+      meta_file <- feather::read_feather(path)
       
       meta_list <- list(meta_file)
       names(meta_list) <- meta_data_files[i]

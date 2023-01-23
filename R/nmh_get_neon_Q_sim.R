@@ -1,3 +1,4 @@
+#' @export
 nmh_get_neon_Q_sim <- function(
     gdrive = "MacroSheds",
     gdrive_filename = 'modeled_discharge_2022-10-13',
@@ -29,7 +30,7 @@ nmh_get_neon_Q_sim <- function(
   
   files <- list.files(this_dir, full.names = TRUE)
   sites <- stringr::str_split_fixed(files, pattern = '/',n=5)[,5] %>%
-    str_remove(.,'.csv')
+    stringr::str_remove(.,'.csv')
   names(files) = sites
   
   # the map function allows us to read in multiple files at once

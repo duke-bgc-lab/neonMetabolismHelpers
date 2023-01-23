@@ -1,4 +1,5 @@
-nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw/neon', write_dir = 'data/munged', site = NULL,
+#' @export
+nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw/neon', write_dir = 'data/munged/qaqc', site = NULL,
                               qaqc_keep = c('Tier1', 'Tier2'), q_write = FALSE) {
 
   if(is.null(site)) {
@@ -61,7 +62,7 @@ nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, dir = 'data/raw/ne
   if(q_write == FALSE) {
     return(q_evaluated)
   } else {
-    q_eval_fp <- file.path(write_dir, 'q_eval_data.csv')
+    q_eval_fp <- file.path(write_dir, '/{site}/csd_continuousDischarge.feather')
     writeLines(paste('writing evaluated discharge file to', q_eval_fp))
     write.csv(q_evaluated, q_eval_fp)
   }

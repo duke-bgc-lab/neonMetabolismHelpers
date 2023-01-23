@@ -1,3 +1,4 @@
+#' @export
 nmh_get_neon_Q_sim <- function(
     gdrive = "MacroSheds",
     gdrive_filename = 'modeled_discharge_2022-10-13',

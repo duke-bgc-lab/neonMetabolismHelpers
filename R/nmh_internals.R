@@ -127,7 +127,7 @@ get_avail_neon_product_sets <- function(prodcode_full){
   
   # returns a tibble with url, site_name, component columns
   
-  avail_sets = tibble()
+  avail_sets = tibble::tibble()
   
   req = httr::GET(paste0("http://data.neonscience.org/api/v0/products/",
                          prodcode_full))

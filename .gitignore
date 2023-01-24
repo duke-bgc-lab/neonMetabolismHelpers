@@ -40,4 +40,3 @@ vignettes/*.pdf
 
 # folders from forks to ignore
 data/
-!data/local/

@@ -198,4 +198,4 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
     } # end product loop
 }
 
-nmh_get_neon_data(product_codes = 'DP4.00130.001', q_type = 'raw', site_filter = 'ARIK', startdate = '2017-01', enddate = '2017-12')
+## nmh_get_neon_data(product_codes = 'DP4.00130.001', q_type = 'raw', site_filter = 'ARIK', startdate = '2017-01', enddate = '2017-12')

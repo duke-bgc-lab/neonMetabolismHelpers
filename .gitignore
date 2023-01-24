@@ -3,7 +3,7 @@
 .Rapp.history
 
 # Session Data files
-.RData
+# .RData
 
 # User-specific files
 .Ruserdata
@@ -39,4 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # folders from forks to ignore
-data/
+data/raw/
+data/munged/

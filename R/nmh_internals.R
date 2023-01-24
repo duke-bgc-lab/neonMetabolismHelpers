@@ -123,7 +123,7 @@ read_neon_feathers <- function(file_path, by_site){
   }
 }
 
-get_avail_neon_product_sets <- function(prodcode_full){
+get_avail_neon_product_sets <- function(prodcode_full) {
   
   # returns a tibble with url, site_name, component columns
   
@@ -138,8 +138,7 @@ get_avail_neon_product_sets <- function(prodcode_full){
   
   urls = unlist(neondata$data$siteCodes$availableDataUrls)
   
-  avail_sets = stringr::str_match(urls,
-                                  '(?:.*)/([A-Z]{4})/([0-9]{4}-[0-9]{2})') %>%
+  avail_sets = stringr::str_match(urls, '(?:.*)/([A-Z]{4})/([0-9]{4}-[0-9]{2})') %>%
     tibble::as_tibble(.name_repair='unique') %>%
     dplyr::rename(url=`...1`, site_name=`...2`, component=`...3`)
   

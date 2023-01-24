@@ -1,7 +1,7 @@
 #' @export
 nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = NULL,
-                              site_filter = NULL, startdate = NA, enddate = NA,
-                              stream_only = TRUE) {
+                              site_filter = NULL, startdate = NA, enddate = NA, neon_api_token = NA,
+                              stream_only = TRUE, forcePareallel = FALSE, check.size = TRUE) {
 
     # checking for user defined filepath
     if(is.null(dest_fp)) {
@@ -17,7 +17,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
     # default is to retrieve all data necessary for NEON metabolism, this is
     if(product_codes == 'all') {
       # products are: discharge, light, barometric pressure, water temp & dissolved oxygen
-      product_codes <- c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP.202288.001')
+      product_codes <- c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP1.20288.001')
     }
 
     products_n = length(product_codes)
@@ -40,6 +40,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
 
              # downloads q_eval and saves as df
              neon_eval_q_df <- nmh_get_neon_q_eval(dest_fp = neon_eval_q_dir, dest_fn = neon_eval_q_fn)
+
            } # end evaluate q conditional
 
            # if the product is discharge and the q_type is simulated
@@ -69,7 +70,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
 
            } else {
              # get NEON product name, used for filepath
-             product_name <- neonUtilities::getProductInfo(product_code)$productName
+             product_name <- neonUtilities::getProductInfo(dpID = product_code, token = neon_api_token)$productName
              data_fp <- file.path(dest_fp, 'neon', product_name)
 
              writeLines(paste('retrieving NEON product:', product_name,
@@ -144,7 +145,10 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
                                                                    package='basic',
                                                                    check.size=FALSE,
                                                                    startdate = startdate,
-                                                                   enddate = enddate
+                                                                   enddate = enddate,
+                                                                   token = neon_api_token,
+                                                                   forceParallel = forceParallel,
+                                                                   check.size = check.size
                                                                    )
                      },
                      error = function(e) {
@@ -154,7 +158,10 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
                                                                        package='expanded',
                                                                        check.size=FALSE,
                                                                        startdate = startdate,
-                                                                       enddate = enddate
+                                                                       enddate = enddate,
+                                                                       token = neon_api_token,
+                                                                       forceParallel = forceParallel,
+                                                                       check.size = check.size
                                                                        ))
 
                      }

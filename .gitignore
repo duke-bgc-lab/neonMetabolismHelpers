@@ -39,5 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # folders from forks to ignore
-data/raw/
-data/munged/
+data/
+!data/*.RData

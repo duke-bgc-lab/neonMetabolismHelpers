@@ -40,4 +40,4 @@ vignettes/*.pdf
 
 # folders from forks to ignore
 data/
-!data/*.RData
+!data/nmh_q_eval.RData

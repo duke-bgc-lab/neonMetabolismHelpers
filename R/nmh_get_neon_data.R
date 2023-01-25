@@ -121,7 +121,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                    cat(paste0(logcode, "-- ERROR raw NEON discharge not found, cant run QAQC method", neon_eval_q_fp), file="nmh_log.txt", append=TRUE)
                 }
 
-                stop(paste0('it looks like you do not have a directory at ', data_fp,
+                stop(paste0('it looks like you do not have a directory at ', raw_q_data_fp,
                            ' \nmake sure you have run this function to retrieve "raw" NEON discharge',
                            ' before running the QAQC version, which filters raw NEON discharge data\n',
                            ' through a rigorous monthly evaluation of the usability of NEON discharge data'))

@@ -4,13 +4,14 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                               log = TRUE,
                               site_filter = NULL, startdate = NA, enddate = NA,
                               neon_api_token = NA, stream_only = TRUE, forceParallel = FALSE,
-                              check.size = TRUE
+                              check.size = TRUE,
+                              quietly = FALSE
                               ) {
                               ## q_evaluation_fp = 'data/raw/macrosheds', # file path where NEON Q evaluation data is saved to and read from
                               ## q_evaluated_fp = 'data/munged' # file path where evaluated Q is saved to and read from
 
     # require macrosheds package to be loaded, and if user does not have it, option to install form github
-    pkg_namespace_require(pkg = 'macrosheds', quietly = FALSE)
+    pkg_namespace_require(pkg = 'macrosheds', quietly = quietly)
 
     # start logging for this function
     logcode = 'nmh_get:'
@@ -98,7 +99,11 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
              neon_eval_q_fp <- file.path(neon_eval_q_dir, neon_eval_q_fn)
 
              # downloads q_eval and saves as df
-             neon_eval_q_df <- nmh_get_neon_q_eval(dest_fp = neon_eval_q_dir, dest_fn = neon_eval_q_fn)
+             neon_eval_q_df <- nmh_get_neon_q_eval(
+               dest_fp = neon_eval_q_dir,
+               dest_fn = neon_eval_q_fn,
+               download = TRUE
+             )
 
              if(log) {
                 cat(paste0(logcode, "-- saving NEON discharge evaluation data at", neon_eval_q_fp), file="nmh_log.txt", append=TRUE)

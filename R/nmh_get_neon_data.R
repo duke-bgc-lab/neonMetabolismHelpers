@@ -113,7 +113,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
              product_name <- neonUtilities::getProductInfo(dpID = product_code, token = neon_api_token)$productName
              raw_q_data_fp <- file.path(data_raw_folder, 'neon', product_name)
              # also set "evaluated" w filepath
-             raw_q_data_fp <- file.path(data_munged_folder, 'neon', product_name)
+             ## munged_q_data_fp <- file.path(data_munged_folder, 'neon', product_name)
 
              # look for raw NEON Q data, necessary for QAQC
              if(!dir.exists(raw_q_data_fp)) {

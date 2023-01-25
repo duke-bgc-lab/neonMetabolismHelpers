@@ -1,8 +1,13 @@
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
-                           q_type = c('raw','qaqc', 'simulated')) {
+                                  q_type = c('raw','qaqc', 'simulated'),
+                                  z_method = c('model', 'meas')) {
   
   if(!q_type %in% c('raw','qaqc', 'simulated')) {
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
+  }
+  
+  if(!z_method %in% c('model', 'meas')){
+    stop('No mean depth method assigned, please select either \n "1) model: use values from Raymond et al. (2012)" or \n "2) meas: site-specific coefficients"')
   }
   
   # TODO: how does sourcing nmh_internals.R work? Is the following line necessary?
@@ -27,9 +32,16 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
   
   # specify directories where the raw data is saved
   sp_dir <- glue::glue(dir, '/streampulse')          # DO and temperature data, from streampulse
-  q_dir <- glue::glue(dir, '/Continuous discharge')  # Discharge from NEON
+  q_dir <- glue::glue(dir, 'neon', '/Continuous discharge')  # default to raw discharge from NEON
   bp_dir <- glue::glue(dir, '/Barometric pressure')  # Barometric pressure from NEON
   light_dir <- glue::glue(dir, '/Photosynthetically active radiation at water surface/') # PAR from NEON
+  
+  # q_dir is different based on "q type"
+  if(q_type == 'simulated') {
+    q_dir <- file.path(dir, 'macrosheds', 'simulated')  # Discharge from NEON Q simulations from MacroSheds scientist Mike Vlah
+  } else if(q_type == 'qaqc') {
+    q_dir <- file.path('data', 'munged', 'qaqc')  # Discharge filtered via NEON Q evaluation from Rhea et al. 2023
+  }
   
   # for loop across each site
   # this will manipulate data at the site level within the function
@@ -128,8 +140,12 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
       
       # fault tolerance: did the data load?
       if(inherits(discharge, 'try-error')) {
-        print(paste0(site, ' failed to load discharge'))
+        print(paste0(site, ' failed to load raw NEON discharge'))
         next
+      }
+      
+      if(site == 'TOMB'){
+        discharge <- nmh_get_tomb_q()
       }
       
       q_final <- discharge %>%
@@ -148,41 +164,43 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
       
       # fault tolerance: did the data load?
       if(inherits(raw_Q, 'try-error')) {
-        print(paste0(site, ' failed to load discharge'))
+        print(paste0(site, ' failed to load Rhea QAQC NEON discharge'))
       }
       
       # TOMB uses USGS discharge data, we'll call dataRetrival to access those data
       if(site == 'TOMB'){
-        q_tomb <- dataRetrieval::readNWISuv('02469761',                            # site code
-                                            c('00060', '00065'),                   # parameter codes
-                                            startDate = '2015-01-01')
         
-        datetime_cor <- data.frame(datetime_15 = seq.POSIXt(min(q_tomb$dateTime),  # date range to access
-                                                            max(q_tomb$dateTime),
-                                                            by = '15 min')) %>%
-          dplyr::mutate(dateTime = ymd_hms(paste0(date(datetime_15),
-                                                  ' ',
-                                                  lubridate::hour(datetime_15), ':00:00')))
-        discharge_filled <- q_tomb %>%
-          dplyr::full_join(.,
-                           datetime_cor,
-                           by = 'dateTime') %>%
-          dplyr::arrange(datetime_15)
-        
-        # convert USGS discharge file into the same units and naming conventions as NEON
-        q_sub <- discharge_filled %>%
-          dplyr::mutate(usgs_discharge_liter = X_00060_00000*28.3168,    # convert cfs to L/s
-                        usgsStage_m = X_00065_00000*0.3048) %>%          # convert ft to m
-          dplyr::select(endDate = datetime_15,
-                        maxpostDischarge = usgs_discharge_liter,
-                        equivalentStage = usgsStage_m) %>%
-          dplyr::mutate(siteID = site)
-        
-        discharge <- q_sub %>%
-          dplyr::select(siteID, endDate, equivalentStage, maxpostDischarge) %>%
-          dplyr::mutate(year = lubridate::year(endDate),
-                        month = lubridate::month(endDate),
-                        maxpostDischarge = maxpostDischarge/1000)       # convert to m3/s
+        discharge <- nmh_get_tomb_q()
+        #   q_tomb <- dataRetrieval::readNWISuv('02469761',                            # site code
+        #                                       c('00060', '00065'),                   # parameter codes
+        #                                       startDate = '2015-01-01')
+        #   
+        #   datetime_cor <- data.frame(datetime_15 = seq.POSIXt(min(q_tomb$dateTime),  # date range to access
+        #                                                       max(q_tomb$dateTime),
+        #                                                       by = '15 min')) %>%
+        #     dplyr::mutate(dateTime = ymd_hms(paste0(date(datetime_15),
+        #                                             ' ',
+        #                                             lubridate::hour(datetime_15), ':00:00')))
+        #   discharge_filled <- q_tomb %>%
+        #     dplyr::full_join(.,
+        #                      datetime_cor,
+        #                      by = 'dateTime') %>%
+        #     dplyr::arrange(datetime_15)
+        #   
+        #   # convert USGS discharge file into the same units and naming conventions as NEON
+        #   q_sub <- discharge_filled %>%
+        #     dplyr::mutate(usgs_discharge_liter = X_00060_00000*28.3168,    # convert cfs to L/s
+        #                   usgsStage_m = X_00065_00000*0.3048) %>%          # convert ft to m
+        #     dplyr::select(endDate = datetime_15,
+        #                   maxpostDischarge = usgs_discharge_liter,
+        #                   equivalentStage = usgsStage_m) %>%
+        #     dplyr::mutate(siteID = site)
+        #   
+        #   discharge <- q_sub %>%
+        #     dplyr::select(siteID, endDate, equivalentStage, maxpostDischarge) %>%
+        #     dplyr::mutate(year = lubridate::year(endDate),
+        #                   month = lubridate::month(endDate),
+        #                   maxpostDischarge = maxpostDischarge/1000)       # convert to m3/s
       } else {
         # apply Rhea et al. NEON q evaluations (tiers assigned to data quality by month and year) to raw NEON discharge
         # to ensure use of only Q data which meets or exceeds minimum standards
@@ -206,6 +224,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
     }
     
+    
     if(q_type == 'simulated') {
       q_final <- neon_Q_sim %>%
         dplyr::rename(site_id = site) %>%
@@ -213,6 +232,36 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::mutate(Q_15min = Q_predicted/1000) %>%
         dplyr::select(DateTime_UTC = datetime,
                       Q_15min)
+    }
+    
+    if(z_method == 'model') {
+      c <- 0.409
+      f <- 0.294
+    }  
+    
+    if(z_method == 'meas') {
+      coefs <- readr::read_csv('data/NEON_site_scaling_coefs.csv')
+      
+      good_fits <- coefs %>% 
+        dplyr::filter(r2_depth > 0.1) %>% 
+        dplyr::pull(site)
+      
+      if(site %in% good_fits) {
+        
+        c <- coefs %>% 
+          dplyr::filter(!!site == site) %>% 
+          dplyr::select(c) %>% 
+          dplyr::pull()
+        
+        f <- coefs %>% 
+          dplyr::filter(site %in% !!site) %>% 
+          dplyr::select(f) %>% 
+          dplyr::pull()
+      } else {
+        cat(glue::glue('No hydraulic scaling coefficients available at {site}\n Using default values c = 0.409, f = 0.294'))
+        c <- 0.409
+        f <- 0.294
+      }
     }
     
     # compile the final output dataset
@@ -227,7 +276,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
                                                                                longitude = lon,
                                                                                time.type = 'mean'),
                       mean_depth = streamMetabolizer::calc_depth(Q_15min,                      # convert discharge to mean depth in the study reach; this uses hydraulic scaling coefficients from Leopold and Maddock 1953
-                                                                 c = 0.409, f = 0.294)) %>%    # coefficients from Raymond et al. 2012
+                                                                 c = c, f = f)) %>%    # coefficients from Raymond et al. 2012
         dplyr::select(solar.time,
                       DO.obs = DO_mgL,
                       DO.sat,
@@ -243,7 +292,8 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::arrange(DateTime_UTC) %>%                # sorts dates from old to new, for some reason merging put things out of order
         padr::pad('15 min') %>%
         dplyr::mutate(solar.time = streamMetabolizer::convert_UTC_to_solartime(DateTime_UTC,lon,'mean'),
-                      depth = streamMetabolizer::calc_depth(Q_15min),
+                      depth = streamMetabolizer::calc_depth(Q_15min,
+                                                            c = c, f = f),
                       light = streamMetabolizer::calc_light(solar.time, lat, lon)) %>%
         dplyr::select(solar.time,
                       DO.obs = DO_mgL,

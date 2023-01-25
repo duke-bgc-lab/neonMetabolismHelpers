@@ -1,7 +1,6 @@
 nmh_filter_metab_bayes <- function(mod_dir = 'data/model_runs/',
                                    q_type = c('raw', 'qaqc', 'simulated')) {
-  
-  
+
   est_dir <- glue::glue(mod_dir, q_type, '/Bayes/')
   
   est <- readr::read_csv(glue::glue(est_dir, 'NEON_metab_{q_type}_estimates.csv'))
@@ -32,5 +31,7 @@ nmh_filter_metab_bayes <- function(mod_dir = 'data/model_runs/',
   
   readr::write_csv(good_est,
                    glue::glue('data/filtered_estimates/neon_metab_filt_{q_type}.csv'))
+  
+  return(good_est)
   
 } # end function

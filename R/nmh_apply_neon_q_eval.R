@@ -9,7 +9,7 @@ nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, raw_q_dir = 'data/
   if(is.null(q_df)) {
     tryCatch(
       expr = {
-        q_dir <- file.path(raw_q_dir, 'Continuous discharge')  # Discharge from NEON
+        q_dir <- file.path(raw_q_dir)  # Discharge from NEON
         writeLines(glue::glue('looking for {site} discharge data at {q_dir}'))
 
         # fault tolerance: did the data load?

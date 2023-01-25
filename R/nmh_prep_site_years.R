@@ -15,8 +15,8 @@ nmh_prep_site_years <- function(years = c('2016', '2021'),
                 times = length(site_codes))
   }
   
-  site_years <<- data.frame(site_code = rep(unique(site_codes), 
-                                            each = length(unique(year))),
-                            year = year)
+  site_years <- data.frame(site_code = rep(unique(site_codes), 
+                                           each = length(unique(year))),
+                           year = year)
   
 } # end function

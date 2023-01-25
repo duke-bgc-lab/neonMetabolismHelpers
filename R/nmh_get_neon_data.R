@@ -1,7 +1,7 @@
 #' @export
 nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = NULL,
                               site_filter = NULL, startdate = NA, enddate = NA, neon_api_token = NA,
-                              stream_only = TRUE, forcePareallel = FALSE, check.size = TRUE) {
+                              stream_only = TRUE, forceParallel = FALSE, check.size = TRUE) {
 
     # checking for user defined filepath
     if(is.null(dest_fp)) {

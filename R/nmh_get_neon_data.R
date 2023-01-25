@@ -1,7 +1,11 @@
 #' @export
 nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = NULL,
-                              site_filter = NULL, startdate = NA, enddate = NA, neon_api_token = NA,
-                              stream_only = TRUE, forcePareallel = FALSE, check.size = TRUE) {
+                              site_filter = NULL, startdate = NA, enddate = NA,
+                              neon_api_token = NA, stream_only = TRUE, forceParallel = FALSE,
+                              check.size = TRUE, q_eval_read_dir = 'data/raw/neon',
+                              q_eval_write_dir = 'data/munged') {
+    # require macrosheds package to be loaded, and if user does not have it, option to install form github
+    pkg_namespace_require(pkg = 'macrosheds', quietly = FALSE)
 
     # checking for user defined filepath
     if(is.null(dest_fp)) {
@@ -183,8 +187,8 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw', dest_fp = N
                    nmh_apply_neon_q_eval(
                      q_eval = neon_eval_q_df,
                      q_df = NULL,
-                     dir = 'data/raw/neon',
-                     write_dir = 'data/munged',
+                     dir = q_eval_read_dir,
+                     write_dir = q_eval_write_dir,
                      site = site_name,
                      q_write = TRUE
                      )

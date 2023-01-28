@@ -106,7 +106,7 @@ model_neon_metab_mle <- function(input_dir = 'data/sm_input/',
     # if the model fit, how long did it take?
     neon_mle_results[j,'Fit Time'] <- ifelse(fit_err == TRUE,
                                              'NA',
-                                             get_fitting_time(dat_metab)[3])
+                                             streamMetabolizer::get_fitting_time(dat_metab)[3])
     
     # if there was an error fitting a site-year, jump to the next level in the for loop
     if(fit_err)

@@ -52,8 +52,8 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
 
     # default is to retrieve all data necessary for NEON metabolism, this is
     if(product_codes == 'all') {
-      # products are: discharge, light, barometric pressure, water temp & dissolved oxygen
-      product_codes <- c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP1.20288.001')
+      # products are: discharge, light, barometric pressure, water temp, & dissolved oxygen
+      product_codes <- c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP1.20053.001', 'DP1.20264.001','DP1.20288.001')
     }
 
     products_n = length(product_codes)
@@ -200,7 +200,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
 
              # filter, by default, to only stream sites (only NEON sites included in MacroSheds)
              if(stream_only) {
-               writeLines('this package is meant for stream and river data only -- filtering available sites',
+               writeLines('this package is meant for stream and river data only -- filtering available sites\n',
                           'to only stream and river type NEON sites')
 
                neon_sites <- macrosheds::ms_load_sites() %>%

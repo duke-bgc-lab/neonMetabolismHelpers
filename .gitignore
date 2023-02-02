@@ -41,6 +41,7 @@ vignettes/*.pdf
 # folders from forks to ignore
 data/raw/
 data/munged/
+data/sm_input
 
 # neon api key and other "secrets"
 ms-neon-account-data.json

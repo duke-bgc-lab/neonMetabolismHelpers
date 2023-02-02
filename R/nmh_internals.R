@@ -564,3 +564,25 @@ get_streampulse_data <- function(site_deets,
   } # end for loop
   
 } # end function
+
+pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.com/MacroSHEDS/macrosheds.git", quietly = FALSE) {
+  res <- try(requireNamespace(pkg, quietly = quietly))
+  if(res) {
+    library(macrosheds)
+  } else {
+    if(!quietly) {
+        if(menu(c("Yes", "No"),
+          title= paste("Are you sure you want to install package", pkg)) == "1") {
+          inst <- try(devtools::install_github(pkg_gh))
+
+          if(class('inst') == 'try-error') {
+            warning('devtools::install_github did not work, trying remotes::install_github')
+            inst <- try(remotes::install_github(pkg_gh))
+          }
+
+        } else {
+          warning("no installation of required package")
+        }
+    }
+  }
+}

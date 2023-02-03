@@ -1,5 +1,5 @@
 nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
-                                  q_type = 'raw') {
+                                  log = TRUE) {
   
   if(!q_type %in% c('raw','source', 'simulated')){
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')

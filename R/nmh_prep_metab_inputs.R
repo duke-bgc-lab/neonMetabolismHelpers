@@ -1,7 +1,8 @@
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
                                   sensor_src = c('neon', 'streampulse'),
                                   q_type = c('raw','qaqc', 'simulated'),
-                                  z_method = c('model', 'meas')) {
+                                  z_method = c('model', 'meas'),
+                                  log = TRUE) {
   # Stop errors if necessary
   if(!q_type %in% c('raw','qaqc', 'simulated')) {
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "qaqc": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
@@ -13,6 +14,18 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
   
   if(!sensor_src %in% c('neon', 'streampulse')){
     stop('No sensor data source assigned, please select either \n "1) neon: use data from NEON" or \n "2) streampulse: data uploaded to StreamPULSE"')
+  }
+  
+  logcode = 'nmh_prep:'
+  if(log){
+    cat(paste0(logcode,'preparing input sensor time series for streamMetabolizer'), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    cat(paste0(logcode,'-- sensor data from ', sensor_src), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    cat(paste0(logcode,'-- discharge data from ', q_type), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    cat(paste0(logcode,'-- mean depth estimated from ', z_method), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
   }
   
   # Process Discharge selection
@@ -54,7 +67,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
   if(q_type == 'simulated') {
     q_dir <- file.path(dir, 'macrosheds', 'simulated')  # Discharge from NEON Q simulations from MacroSheds scientist Mike Vlah
   } else if(q_type == 'qaqc') {
-    q_dir <- file.path('data', 'munged', 'qaqc')  # Discharge filtered via NEON Q evaluation from Rhea et al. 2023
+    q_dir <- file.path('data', 'munged', 'qaqc')        # Discharge filtered via NEON Q evaluation from Rhea et al. 2023
   }
   
   # for loop across each site with sensor data
@@ -76,6 +89,11 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     lon <- site_data %>% 
       dplyr::filter(site_code %in% site) %>% 
       dplyr::pull(longitude)
+    
+    if(log){
+      cat(paste0(logcode,' preparing time series for: ', site), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    }
     
     if(sensor_src == 'streampulse'){
       # read in the temperature and DO sensor data
@@ -120,7 +138,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         dplyr::summarise(site = siteID,
                          DO_mgL = mean(dissolvedOxygen,                        # calculate mean bp during each 15 minute window
                                        na.rm = TRUE))
-
+      
       if(site %in% c('BLWA', 'FLNT', 'TOMB')){
         buoy_data <- feather::read_feather(glue::glue(neon_temp_buoy_dir, '/{site}','/TSD_1_min.feather')) 
         
@@ -155,6 +173,11 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
                       WaterTemp_C = temp_mean)
     }
     
+    if(log){
+      cat(paste0(logcode,'-- ', site, ' DO and temp prepared'), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    }
+    
     # define start and end dates for each site- will be part of file naming convention
     start_date <- dplyr::pull(sensor_data_clean[1,'DateTime_UTC'])
     end_date <- dplyr::pull(sensor_data_clean[nrow(sensor_data_clean),'DateTime_UTC'])
@@ -165,6 +188,11 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     # fault tolerance: if NEON data doesn't exist, use streamPULSE function to find nearest pressure data
     if(inherits(bp, 'try-error')) {
       print(paste0(site, ' barometric pressure failed to load'))
+      
+      if(log){
+        cat(paste0(logcode,'-- no barometric pressure data from NEON, will estimate from NOAA'), 
+            file = 'nmh_log.txt', append = TRUE, sep = '\n')
+      }
       
       bp_15 <- FindandCollect_airpres(lat = lat,                     # define where the site is
                                       lon = lon,
@@ -191,25 +219,31 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     
     # calculate DO.sat with lakeMetabolizer function based on bp, temp, salinity
     use_sat <- try(use %>%
-      dplyr::mutate(DO.sat = streamMetabolizer::calc_DO_sat(temp.water = WaterTemp_C,   
-                                                            pressure.air = BP_15min,    
-                                                            salinity.water = 0,
-                                                            model = 'garcia-benson')))
+                     dplyr::mutate(DO.sat = streamMetabolizer::calc_DO_sat(temp.water = WaterTemp_C,   
+                                                                           pressure.air = BP_15min,    
+                                                                           salinity.water = 0,
+                                                                           model = 'garcia-benson')))
     
     # if streamMetabolizer::calc_DO_sat() returns an error, its also in nmh_internals.R
     if(inherits(use_sat, 'try-error')){
       use_sat <- use %>%
-      dplyr::mutate(DO.sat = calc_DO_sat(temp.water = WaterTemp_C,   
-                                         pressure.air = BP_15min,    
-                                         salinity.water = 0,
-                                         model = 'garcia-benson'))
-      }
+        dplyr::mutate(DO.sat = calc_DO_sat(temp.water = WaterTemp_C,   
+                                           pressure.air = BP_15min,    
+                                           salinity.water = 0,
+                                           model = 'garcia-benson'))
+    }
+    
+    if(log){
+      cat(paste0(logcode,'-- satruation DO estimated using streamMetabolizer::calc_DO_sat()'), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    }
     
     # read in light data
     par <- try(feather::read_feather(glue::glue(light_dir, '{site}/PARWS_5min.feather')))
     
     if(inherits(par, 'try-error')) {
-      print('No NEON measured PAR at this site, will esimate from streamMetabolizer::calc_light()')
+      cat(paste0(logcode,'-- no light data available from NEON, will be estimated using streamMetabolizer::calc_light()'), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
     } else {
       par_15 <- par %>%
         dplyr::filter(horizontalPosition %in% c('102', '103'),
@@ -226,106 +260,76 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     }
     
     # compile discharge data
-    if(q_type == 'raw') {
-      # read in discharge file
-      discharge <- try(feather::read_feather(glue::glue(raw_q_dir, '/{site}/csd_continuousDischarge.feather')))
+    if(site == 'TOMB') {
+      rawQ <- try(feather::read_feather(glue::glue(raw_q_dir, '/{site}/csd_continuousDischargeUSGS.feather')))
+      q_final <- rawQ %>% 
+        dplyr::mutate(DateTime_UTC = lubridate::round_date(endDate, '15 minutes')) %>% 
+        dplyr::group_by(DateTime_UTC) %>% 
+        dplyr::summarise(Q_15min = mean(usgsDischarge, na.rm = TRUE))
+    } else {
       
-      # fault tolerance: did the data load?
-      if(inherits(discharge, 'try-error')) {
-        print(paste0(site, ' failed to load raw NEON discharge'))
-        next
-      }
-      
-      if(site == 'TOMB'){
-        discharge <- nmh_get_tomb_q()
-      }
-      
-      q_final <- discharge %>%
-        dplyr::select(endDate,
-                      maxpostDischarge) %>%
-        dplyr::mutate(DateTime_UTC = lubridate::round_date(endDate,
-                                                           '15 minutes')) %>%
-        dplyr::group_by(DateTime_UTC) %>%
-        dplyr::summarise(Q_15min = mean(maxpostDischarge/1000, na.rm = TRUE))
-    }
-    
-    if(q_type == 'qaqc') {
-      # append discharge data
-      # read in discharge file
-      raw_Q <- try(feather::read_feather(glue::glue(raw_q_dir, '/{site}/csd_continuousDischarge.feather')))
-      
-      # fault tolerance: did the data load?
-      if(inherits(raw_Q, 'try-error')) {
-        print(paste0(site, ' failed to load Rhea QAQC NEON discharge'))
-      }
-      
-      # TOMB uses USGS discharge data, we'll call dataRetrival to access those data
-      if(site == 'TOMB'){
+      if(q_type == 'raw') {
         
-        discharge <- nmh_get_tomb_q()
-        #   q_tomb <- dataRetrieval::readNWISuv('02469761',                            # site code
-        #                                       c('00060', '00065'),                   # parameter codes
-        #                                       startDate = '2015-01-01')
-        #   
-        #   datetime_cor <- data.frame(datetime_15 = seq.POSIXt(min(q_tomb$dateTime),  # date range to access
-        #                                                       max(q_tomb$dateTime),
-        #                                                       by = '15 min')) %>%
-        #     dplyr::mutate(dateTime = ymd_hms(paste0(date(datetime_15),
-        #                                             ' ',
-        #                                             lubridate::hour(datetime_15), ':00:00')))
-        #   discharge_filled <- q_tomb %>%
-        #     dplyr::full_join(.,
-        #                      datetime_cor,
-        #                      by = 'dateTime') %>%
-        #     dplyr::arrange(datetime_15)
-        #   
-        #   # convert USGS discharge file into the same units and naming conventions as NEON
-        #   q_sub <- discharge_filled %>%
-        #     dplyr::mutate(usgs_discharge_liter = X_00060_00000*28.3168,    # convert cfs to L/s
-        #                   usgsStage_m = X_00065_00000*0.3048) %>%          # convert ft to m
-        #     dplyr::select(endDate = datetime_15,
-        #                   maxpostDischarge = usgs_discharge_liter,
-        #                   equivalentStage = usgsStage_m) %>%
-        #     dplyr::mutate(siteID = site)
-        #   
-        #   discharge <- q_sub %>%
-        #     dplyr::select(siteID, endDate, equivalentStage, maxpostDischarge) %>%
-        #     dplyr::mutate(year = lubridate::year(endDate),
-        #                   month = lubridate::month(endDate),
-        #                   maxpostDischarge = maxpostDischarge/1000)       # convert to m3/s
-      } else {
-        # apply Rhea et al. NEON q evaluations (tiers assigned to data quality by month and year) to raw NEON discharge
-        # to ensure use of only Q data which meets or exceeds minimum standards
+        # read in discharge file
+        discharge <- try(feather::read_feather(glue::glue(raw_q_dir, '/{site}/csd_continuousDischarge.feather')))
+        
+        if(inherits(discharge, 'try-error')){
+          cat('No discharge data available at this site for this q_type')
+        }
+        
+        q_final <- discharge %>%
+          dplyr::select(endDate,
+                        maxpostDischarge) %>%
+          dplyr::mutate(DateTime_UTC = lubridate::round_date(endDate,
+                                                             '15 minutes')) %>%
+          dplyr::group_by(DateTime_UTC) %>%
+          dplyr::summarise(Q_15min = mean(maxpostDischarge/1000, na.rm = TRUE))
+      }
+      
+      if(q_type == 'qaqc') {
+        # append discharge data
+        # read in discharge file
+        raw_Q <- try(feather::read_feather(glue::glue(raw_q_dir, '/{site}/csd_continuousDischarge.feather')))
+        
+        # fault tolerance: did the data load?
+        if(inherits(raw_Q, 'try-error')) {
+          print(paste0(site, ' failed to load Rhea QAQC NEON discharge'))
+        }
+        
         qaqc_keep = c('Tier1', 'Tier2')
         
         # this function passes through Rhea et al.
         # and converts from L/s to m3/s
         discharge <- nmh_apply_neon_q_eval(q_eval = q_eval,
-                                       q_df = raw_Q,
-                                       site = site,
-                                       qaqc_keep = qaqc_keep)
+                                           q_df = raw_Q,
+                                           site = site,
+                                           qaqc_keep = qaqc_keep)
+        
+        q_final <- discharge %>%
+          dplyr::select(endDate,
+                        equivalentStage,
+                        maxpostDischarge) %>%
+          dplyr::mutate(DateTime_UTC = lubridate::round_date(endDate,
+                                                             '15 minutes')) %>%
+          dplyr::group_by(DateTime_UTC) %>%
+          dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
       }
       
-      q_final <- discharge %>%
-        dplyr::select(endDate,
-                      equivalentStage,
-                      maxpostDischarge) %>%
-        dplyr::mutate(DateTime_UTC = lubridate::round_date(endDate,
-                                                           '15 minutes')) %>%
-        dplyr::group_by(DateTime_UTC) %>%
-        dplyr::summarise(Q_15min = mean(maxpostDischarge, na.rm = TRUE))
+      if(q_type == 'simulated') {
+        q_final <- neon_Q_sim %>%
+          dplyr::filter(site %in% !!site) %>% 
+          dplyr::mutate(Q_15min = Q_predicted/1000) %>%
+          dplyr::select(DateTime_UTC = datetime,
+                        Q_15min)
+      }
     }
     
-    
-    if(q_type == 'simulated') {
-      q_final <- neon_Q_sim %>%
-        dplyr::rename(site_id = site) %>%
-        dplyr::filter(site == site_id) %>%
-        dplyr::mutate(Q_15min = Q_predicted/1000) %>%
-        dplyr::select(DateTime_UTC = datetime,
-                      Q_15min)
+    if(log){
+      cat(paste0(logcode,'--discharge data compiled from ' , q_type), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
     }
     
+    # determine hydraulic scaling coefficients to use to estimate mean depth
     if(z_method == 'model') {
       c <- 0.409
       f <- 0.294
@@ -348,10 +352,14 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
           dplyr::select(f) %>% 
           dplyr::pull()
       } else {
-        cat(glue::glue('No hydraulic scaling coefficients available at {site}\n Using default values c = 0.409, f = 0.294'))
         c <- 0.409
         f <- 0.294
       }
+    }
+    
+    if(log){
+      cat(paste0(logcode,'-- Hydraulic scaling coefs are c = ', c, ' and f = ', f), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
     }
     
     # compile the final output data
@@ -380,11 +388,16 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
                               q_final,                    # and discharge file
                               by = 'DateTime_UTC') %>%
         dplyr::arrange(DateTime_UTC) %>%                # sorts dates from old to new, for some reason merging put things out of order
-        padr::pad('15 min') %>%
-        dplyr::mutate(solar.time = streamMetabolizer::convert_UTC_to_solartime(DateTime_UTC,lon,'mean'),
+        #padr::pad('15 min') %>%
+        dplyr::mutate(solar.time = streamMetabolizer::convert_UTC_to_solartime(DateTime_UTC,
+                                                                               lon,
+                                                                               'mean'),
                       depth = streamMetabolizer::calc_depth(Q_15min,
-                                                            c = c, f = f),
-                      light = streamMetabolizer::calc_light(solar.time, lat, lon)) %>%
+                                                            c = c, 
+                                                            f = f),
+                      light = streamMetabolizer::calc_light(solar.time, 
+                                                            lat, 
+                                                            lon)) %>%
         dplyr::select(solar.time,
                       DO.obs = DO_mgL,
                       DO.sat = DO.sat,
@@ -394,15 +407,36 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
                       light)
     }
     
+    save_dir = 'data/sm_input/'
+    
     # create the save directory if need be
-    if(!dir.exists(glue::glue('data/sm_input/'))){
-      print('Directory does not exist, creating now')
-      dir.create(glue::glue('data/sm_input/'))
+    if(!dir.exists(save_dir)){
+      print('Save directory, data/sm_input/, does not exist, creating now')
+      dir.create(save_dir)
     }
     
-    # write a CSV file for each site
-    readr::write_csv(out,
-                     glue::glue('data/sm_input/{site}_Q-{q_type}_Z-{z_method}_TS-{sensor_src}.csv'))
+    # calculate water year for the full time series
+    out <- out %>% 
+      dplyr::mutate(wateryear = ifelse(lubridate::month(solar.time) > 9,
+                                       lubridate::year(solar.time) + 1,
+                                       lubridate::year(solar.time)))
+    
+    # create a separate data frame for each water year
+    split <- split(out,
+                   f = out$wateryear)
+    
+    # and save the file
+    mapply(readr::write_csv,
+           split,
+           file = paste0(save_dir, site, '_',names(split),'_Q-', q_type,'_Z-', z_method,'_TS-', sensor_src,'.csv')
+           )
+    
+    this_time <- Sys.time()
+    if(log){
+      cat(paste0(logcode,'-- input time series compilation successful, saved at ', save_dir, ' at ', this_time), 
+          file = 'nmh_log.txt', append = TRUE, sep = '\n')
+    }
+    
   } # end for loop
   
 } # end function

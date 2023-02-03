@@ -204,8 +204,8 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                           'to only stream and river type NEON sites')
 
                neon_sites <- macrosheds::ms_load_sites() %>%
-                 filter(network == 'neon') %>%
-                 pull("site_code")
+                 dplyr::filter(network == 'neon') %>%
+                 dplyr::pull("site_code")
 
                avail_sites <- avail_sites[avail_sites %in% neon_sites]
 
@@ -307,7 +307,6 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
 
                  # run this to make a new evaluated Q folder for each site
                  if(product_code == 'DP4.00130.001' & q_type == 'qaqc'){
-
 
                    # also set "evaluated" w filepath
                    munged_q_data_fp <- file.path(data_munged_folder, 'neon', product_name, site_name)

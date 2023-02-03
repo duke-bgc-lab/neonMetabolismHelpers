@@ -1,12 +1,15 @@
 nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
-                                  q_type = 'raw') {
+                                  log = TRUE) {
   
   if(!q_type %in% c('raw','source', 'simulated')){
     stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulation": NEON discharge simulations by the Macrosheds project')
   }
   
-  # TODO: source in helper functions
-  source('R/nmh_internals.R')
+  logcode <- 'nmh_model_bayes:'
+  if(log){
+    cat(paste0(logcode,' Ready to model metabolism using Bayesian model structure'), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+  }
   
   # Define the model name, which establishes core hyperparameters. These would only be
   # changed as a last resort if the model just refuses to converge. i.e., if
@@ -21,20 +24,23 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
     engine = 'stan')
   
   # Define fault tolerances
-  has_data <- TRUE
+  has_data <- FALSE
   setup_err <- FALSE
   fit_err <- FALSE
-  
-  # print into console that we are ready to model!
-  writeLines(glue::glue('bayes modelling environment setup complete, ',
-                        'starting site-year model runs \n\n\n'))
   
   # run through site-years in parallel
   # this loop contains various steps to prepare modeling
   
-  # run through sit years in parallel
+  input_ts <- list.files(input_dir,
+                         full.names = TRUE)
   
-  neon_bayes_results <- foreach::foreach(m = 1:length(site_years$site),
+  if(log){
+    cat(paste0(logcode,' There are ', length(input_ts), ' site - wateryears to run'), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+  }
+  
+  # run through sit years in parallel
+  neon_bayes_results <- foreach::foreach(m = 1:length(input_ts),
                                 .combine = bind_rows,
                                 .packages = c('dplyr',
                                               'glue',
@@ -43,14 +49,19 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           print(q_type)
           print("_________________________________________________")
           
-          # Step 0: define starting conditions and initiate tracker
+          # Step 0: get information from each input time-series
+          file <- gsub(input_dir,'',input_ts[m])
+          file_chunks <- unlist(stringr::str_split(file, '_'))
           
-          # Define which site and which year we are modeling on
-          site_id <- site_years[m, 'site']
-          run_year <- site_years[m, 'year']
+          # reconstruct how the data were compiled
+          site <- file_chunks[1]
+          wyear <- file_chunks[2]
+          q_type <- gsub('Q-','', file_chunks[3])
+          z_method <- gsub('Z-','',file_chunks[4])
+          sensor_src <- gsub('.csv','', gsub('TS-','', file_chunks[5]))
           
           # Define where the model outputs will be saved
-          write_dir = glue::glue('data/model_runs/{q_type}/Bayes')
+          write_dir = glue::glue('data/model_runs/Bayes')
           
           # and create the directory if it doesn't exist
           if(!dir.exists(write_dir))
@@ -62,7 +73,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           session_time = paste(Sys.time(), Sys.timezone())
           
           # create a tracker text file for each site-year model run and save it to the write_dir
-          tracker_fn = glue::glue("{site_id}_{run_year}__{session_id}_tracker.txt")
+          tracker_fn = glue::glue("{site}_{wyear}__{session_id}_tracker.txt")
           tracker_fp = file.path(write_dir, "trackers", tracker_fn)
           
           # and create the directory for the tracker files if it doesn't exist
@@ -71,17 +82,20 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           
           # create the file and write the meta-data for the model run
           cat(glue::glue("Tracker Log, R Session ID: {session_id}\n    datetime {session_date} {session_time}\n"), file=tracker_fp, sep="\n")
-          cat(glue::glue('site: {site_id} \n year: {run_year} \n discharge: {q_type}'), file=tracker_fp, sep = "\n", append=TRUE)
+          cat(glue::glue('site: {site} \n year: {wyear} \n discharge: {q_type}, depth method: {z_method}, sensor data from" {sensor_src}'), 
+              file=tracker_fp, sep = "\n", append=TRUE)
           
           # Step 1: read in data
           # create a matrix to track which site-years have a successful model run
-          neon_bayes_row <- matrix('',
-                                   ncol = 7,
+          neon_bayes_row <- matrix(ncol = 10,
                                    nrow = 1)
          
           # we will track each site-year and record if there: ,
           colnames(neon_bayes_row) = c('Site',
-                                       'Year',
+                                       'WYear',
+                                       'q_type',
+                                       'z_method',
+                                       'sensor_src',
                                        'Has Data',       # is data (T/F)
                                        'Setup Error',    # a K-Q relationship can be defined (T/F)
                                        'Fit Error',      # there was an error fitting the model (T/F)
@@ -89,17 +103,18 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
                                        'Fit Time')       # and if the model run, how long did it take (numeric)
           
           
-          writeLines(glue::glue('\n\n\nrunning model for\n\n    site:{site_id}\n    year: {run_year}\n\n\n'))
+          writeLines(glue::glue('\n\n\nrunning model for\n\n    site:{site}\n    year: {wyear}\n\n\n'))
           
           # keep track of our results by site and by year
-          neon_bayes_row[1, 'Site'] <- site_id
-          neon_bayes_row[1, 'Year'] <- run_year
+          neon_bayes_row[1, 'Site'] <- site
+          neon_bayes_row[1, 'WYear'] <- wyear
           
           # read in the data
           input_dat <- tryCatch({
             
             # read in site model input data
-            readr::read_csv(glue::glue(input_dir,'/{q_type}/{site_id}_{q_type}_smReady.csv'))
+            readr::read_csv(input_ts[m]) %>% 
+              dplyr::select(-wateryear)
           },
           # fault tolerance if the file couldn't be read in; not, jump to the next site
           error = function(e) {
@@ -111,41 +126,44 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           )
           
           # if the data exists, record to the tracker file that it was successful
-          cat('Step_1_Success',
+          if(log){
+            cat(paste0(logcode,' Data read in successfully'), 
+                file = 'nmh_log.txt', append = TRUE, sep = '\n')
+            cat('Step_1_Success',
               file = tracker_fp, sep = "\n", append=TRUE)
+          }
           
-          # Step 2: filter data to the run year
-          input_dat_sub <- input_dat %>%
-            dplyr::filter(lubridate::year(solar.time) == run_year)
-          
-          # if there are no rows in the dataframe, there is no data from that site-year and jump to the next
-          if(nrow(input_dat_sub) == 0){
+          # check if there is data to model
+          if(sum(is.na(input_dat$DO.obs)) == nrow(input_dat)){
             neon_bayes_row[1, 'Has Data'] <- FALSE
             cat('Step_2_Error',                            # write the success/fail to the tracker file
                 file = tracker_fp, sep = "\n", append=TRUE)
-            # next
-          } else {
-            neon_bayes_row[1, 'Has Data'] <- TRUE
+            cat(paste0(logcode, '-- ',site,'-' ,wyear, ' Has no DO data'),
+                append = TRUE, file = 'nmh_log.txt', sep = '\n')
+          } else{
+            neon_bayes_row[1, 'Has Data'] <- TRUE            
+            cat(paste0(logcode, '-- ',site,'-' , wyear, ' Has data'),
+                append = TRUE, file = 'nmh_log.txt', sep = '\n')
             cat('Step_2_Success',                          # write the success/fail to the tracker file
                 file = tracker_fp, sep = "\n", append=TRUE)
           }
-
+          
           # Step 3: check that input data is good (not all NAs)
           min_ratio <- 1 # 1 = 100% NAs in a column of the dataframe
-          for(i in 1:ncol(input_dat_sub[-1])){
+          for(i in 1:ncol(input_dat[-1])){
             
             # define the column names that have data
-            vars <- names(input_dat_sub[-1])
+            vars <- names(input_dat[-1])
             
             # which column to examine first
             var <- vars[i]
             
             # how many observations of that variable
-            length <- input_dat_sub[,var] %>%
+            length <- input_dat[,var] %>%
               nrow()
             
             # how many NAs in that variable
-            nas <- input_dat_sub[,var] %>%
+            nas <- input_dat[,var] %>%
               dplyr::filter(is.na(.)) %>%
               nrow()
             
@@ -155,13 +173,13 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
             # if the ratio is 100% NAs, record that in the tracker file and jump to the next
             if(ratio == min_ratio) {
               cat('Step_3_Error', file = tracker_fp, sep = "\n", append=TRUE)
-              cat(glue::glue('---- ', '{site_id} has no {var} data, jumping to next site-year'),
+              cat(glue::glue('---- ', '{site} has no {var} data, jumping to next site-year'),
                   file = tracker_fp, sep = "\n", append=TRUE)
-              writeLines(glue::glue('{site_id} has no {var} data, jumping to next site-year'))
+              writeLines(glue::glue('{site} has no {var} data, jumping to next site-year'))
             } else { # or keep going
               cat(glue::glue('Step_3_{i}_Success'),
                   file = tracker_fp, sep = "\n", append=TRUE)
-              cat(glue::glue('---- ', '{site_id} has {round(as.numeric(ratio)*100,2)}% NA of {var} data'),
+              cat(glue::glue('---- ', '{site} has {round(as.numeric(ratio)*100,2)}% NA of {var} data'),
                   file = tracker_fp, sep = "\n", append=TRUE)
             }
           } # end for loop
@@ -170,20 +188,20 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           # pull the earliest and latest date in the modeled run for file naming purposes
           tryCatch({
             # define start and end dates from the filtered dataset
-            start_date <- lubridate::date(dplyr::first(input_dat_sub$solar.time))
-            end_date <- lubridate::date(dplyr::last(input_dat_sub$solar.time))
+            start_date <- lubridate::date(dplyr::first(input_dat$solar.time))
+            end_date <- lubridate::date(dplyr::last(input_dat$solar.time))
             
             # read in results from MLE model run
-            mle_priors <- readr::read_csv(glue::glue('data/model_runs/{q_type}/MLE/MLE_{q_type}_diagnostics.csv'))
+            mle_priors <- readr::read_csv(glue::glue('data/model_runs/MLE/MLE_diagnostics.csv'))
             
             # subset to pull gas exchange results
             median_K600_mle <- mle_priors %>%
-              dplyr::filter(site == site_id) %>%
-              dplyr::select(site, year, K_median)
+              dplyr::filter(site %in% !! site) %>%
+              dplyr::select(site, wyear, K_median)
             
             # create an object that sorts discharge in log space
-            Q_by_day <- tapply(log(input_dat_sub$discharge),
-                               substr(input_dat_sub$solar.time, 1, 10),
+            Q_by_day <- tapply(log(input_dat$discharge),
+                               substr(input_dat$solar.time, 1, 10),
                                mean)
             
             # define each node of log discharge by 0.2 units
@@ -217,17 +235,21 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           if(setup_err == TRUE) {
             neon_bayes_row[1, 'Setup Error'] <- TRUE
             cat('Step_4_Error', file = tracker_fp, sep = "\n", append=TRUE)
+            cat(paste0(logcode, '-- failed to define K600-Q Bayesian prior, model setup failed'),
+                append = TRUE, file = 'nmh_log.txt', sep = '\n')
             next
           } else {
             neon_bayes_row[1, 'Setup Error'] <- FALSE
             cat('Step_4_Success', file = tracker_fp, sep = "\n", append=TRUE)
+            cat(paste0(logcode, '-- defined K600-Q Bayesian prior, model setup succeeded'),
+                append = TRUE, file = 'nmh_log.txt', sep = '\n')
           }
           
           # Step 5: run the model
           tryCatch({
             # run the model
             dat_metab <- streamMetabolizer::metab(specs = bayes_specs,
-                                                  data = input_dat_sub)
+                                                  data = input_dat)
             # if the model returns a warning, fit error is TRUE and we move
             # to the next site-year
             model_error <- dat_metab@fit$errors
@@ -258,12 +280,16 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           
           # logging of model run errors
           if(fit_err) {
-            writeLines(glue::glue("fit error on\n site: {site_id}\n year: {run_year}"))
+            writeLines(glue::glue("fit error on\n site: {site}\n year: {wyear}"))
             cat('Step_5_fitError', file=tracker_fp, sep = "\n", append=TRUE)
             cat(glue::glue('---- {model_error}'), file=tracker_fp, sep = "\n", append=TRUE)
+            cat(paste0(logcode, '-- Modeling returned an error for ', site.,'-',wyear),
+                append = TRUE, file = 'nmh_log.txt', sep = '\n')
             next
           } else {
             cat('Step_5_fitSuccess', file=tracker_fp, sep = "\n", append=TRUE)
+            cat(paste0(logcode, '-- Model fit successfully for ', site, '-', wyear),
+                append = TRUE, file = 'nmh_log.txt', sep = '\n')
           }
           
           # Step 6: write model output
@@ -328,7 +354,11 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
   readr::write_csv(data.frame(neon_bayes_results),
                    glue::glue(write_dir, '/neon_bayes_row.csv')) #save run results if you want to
   
-  # TODO: add a column(s) to site_years to look at general stats on model runs etc.
+  this_time <- Sys.time()
+  if(log) {
+    cat(paste0(logcode, '-- all model runs completed at ', this_time),
+      append = TRUE, file = 'nmh_log.txt', sep = '\n')
+    }
   
   return(neon_bayes_results)
   

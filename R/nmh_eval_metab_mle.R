@@ -1,16 +1,22 @@
-nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
-                               q_type = c('raw', 'source', 'simulated')) {
+nmh_eval_metab_mle <- function(dir = 'data/model_runs/MLE/dat_fit/',
+                               log = TRUE) {
 
-  dir_type <- glue::glue(dir, q_type)
-  
-  dir_fits <- glue::glue(dir_type, '/MLE/dat_fit')
-  
-  fits <- list.files(dir_fits,
+  fits <- list.files(dir,
                      full.names = TRUE)
+  
+  logcode = 'nmh_mle_eval:'
+  this_time <- Sys.time()
+  if(log){
+    cat(paste0(logcode,'-- Evaluating ', length(fits),' MLE model runs to determine priors for Bayesian run at ', this_time), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+  }
   
   mle_diagnostic <- data.frame(
     site = character(),
-    year = character(),
+    wyear = character(),
+    q_type = character(),
+    z_method = character(),
+    sensor_src = character(),
     GPP_neg = numeric(),
     ER_pos = numeric(),
     K_median = numeric(),
@@ -21,12 +27,17 @@ nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
   
   for(i in 1:length(fits)) {
     
-    fit <- readr::read_csv(fits[i])
+    file <- gsub(dir,'',fits[i])
+    file_chunks <- unlist(stringr::str_split(file, '_'))
     
-    site <- stringr::str_split(fits[i], '/')[[1]][6] %>%
-      substr(.,1,4)
-    year <- stringr::str_split(fits[i], '/')[[1]][6] %>%
-      substr(.,6,9)
+    # reconstruct how the data were compiled
+    site <- file_chunks[1]
+    wyear <- file_chunks[2]
+    q_type <- gsub('Q-','', file_chunks[3])
+    z_method <- gsub('Z-','',file_chunks[4])
+    sensor_src <- gsub('.csv','', gsub('TS-','', file_chunks[5]))
+    
+    fit <- readr::read_csv(fits[i])
     
     GPP_neg <- fit %>%
       dplyr::filter(GPP.daily < -0.5) %>%
@@ -52,7 +63,10 @@ nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
     mle_diagnostic <- mle_diagnostic %>%
       dplyr::add_row(
         site = site,
-        year = year,
+        wyear = wyear,
+        q_type = q_type,
+        z_method = z_method,
+        sensor_src = sensor_src,
         GPP_neg = GPP_neg,
         ER_pos = ER_pos,
         K_median = dplyr::pull(K_sum, medianK),
@@ -64,7 +78,13 @@ nmh_eval_metab_mle <- function(dir = 'data/model_runs/',
   } # end for loop
   
   readr::write_csv(mle_diagnostic,
-                   glue::glue(dir_type, '/MLE/MLE_{q_type}_diagnostics.csv'))
+                   'data/model_runs/MLE/MLE_diagnostics.csv')
+  
+  this_time <- Sys.time()
+  if(log){
+    cat(paste0(logcode,'-- Finshed evaluating MLE model runs to determine priors for Bayesian run at ', this_time), 
+        file = 'nmh_log.txt', append = TRUE, sep = '\n')
+  }
   
   return(mle_diagnostic)
   

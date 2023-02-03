@@ -417,7 +417,7 @@ get_neon_site_data <- function(arg = 'details') {
   # create the site codes
   us_states <- USAboundaries::us_states()
   
-  site_data <- macrosheds::ms_download_site_data() %>% 
+  site_data <- macrosheds::ms_load_sites() %>% 
     dplyr::filter(domain == 'neon',
            site_type == 'stream_gauge')
   
@@ -438,6 +438,7 @@ get_neon_site_data <- function(arg = 'details') {
     start_date = NA,
     end_date = NA
   )
+  
   if(arg == 'details') {
     return(site_deets)
   } else {
@@ -559,7 +560,7 @@ get_streampulse_data <- function(site_deets,
     
     print(paste('downloading', site_code, 'data from streampulse'))
     file_path <- glue::glue('data/raw/streampulse/{site_code}.csv')
-
+    
     readr::write_csv(streampulse_data$data, file_path)
   } # end for loop
   
@@ -584,5 +585,30 @@ pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.c
           warning("no installation of required package")
         }
     }
+  }
+}
+
+calc_DO_sat <- function (temp.water, pressure.air, salinity.water = u(0, "PSU"), 
+                         model = "garcia-benson", ...) {
+  with.units <- any(sapply(list(temp.water, pressure.air), 
+                           is.unitted)) || (if (!missing(salinity.water)) 
+                             is.unitted(salinity.water)
+                             else FALSE)
+  if (with.units) {
+    verify_units(temp.water, "degC")
+    verify_units(pressure.air, "mb")
+    verify_units(salinity.water, "PSU")
+  }
+  temp.water <- v(temp.water)
+  pressure.air <- v(pressure.air)
+  salinity.water <- v(salinity.water)
+  o2.at.sat <- LakeMetabolizer::o2.at.sat.base(temp = temp.water, 
+                                               baro = pressure.air, salinity = salinity.water, model = model, 
+                                               ...)
+  if (with.units) {
+    return(u(o2.at.sat, "mgO2 L^-1"))
+  }
+  else {
+    return(o2.at.sat)
   }
 }

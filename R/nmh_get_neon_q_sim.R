@@ -1,5 +1,5 @@
 #' @export
-nmh_get_neon_Q_sim <- function(
+nmh_get_neon_q_sim <- function(
     gdrive = "MacroSheds",
     gdrive_filename = 'modeled_discharge_2022-10-13',
     file_ext = '.zip') {

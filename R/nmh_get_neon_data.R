@@ -200,8 +200,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
 
              # filter, by default, to only stream sites (only NEON sites included in MacroSheds)
              if(stream_only) {
-               writeLines('this package is meant for stream and river data only -- filtering available sites\n',
-                          'to only stream and river type NEON sites')
+               writeLines('this package is meant for stream and river data only -- filtering available sites to only stream and river type NEON sites')
 
                neon_sites <- macrosheds::ms_load_sites() %>%
                  dplyr::filter(network == 'neon') %>%

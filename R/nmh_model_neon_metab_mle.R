@@ -1,4 +1,4 @@
-
+#' @export
 # default directory is the default NEON input files, or data that uses only data from NEON
 nmh_model_neon_metab_mle <- function(input_dir = 'data/sm_input/',
                                  log = TRUE) {

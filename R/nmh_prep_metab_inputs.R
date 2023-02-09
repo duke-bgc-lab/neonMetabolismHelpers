@@ -1,3 +1,4 @@
+#' @export
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
                                   sensor_src = c('neon', 'streampulse'),
                                   q_type = c('raw','qaqc', 'simulated'),

@@ -1,3 +1,4 @@
+#' @export
 nmh_prep_bayes_model <- function() {
   tryCatch({
     library('rstan')

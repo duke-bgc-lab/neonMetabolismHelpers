@@ -1,14 +1,16 @@
-nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                          q_type = c('raw', 'qaqc', 'simulated')) {
+nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
+                                          log = TRUE) {
   
-  mod_dir_type <- glue::glue(mod_dir, q_type)
-  mod_dir_fits <- glue::glue(mod_dir_type,'/Bayes/daily')
+  mod_dir_fits <- glue::glue(mod_dir,'daily/')
   
   n_mods <- list.files(mod_dir_fits,
                        full.names = TRUE)
   
   out <- data.frame(site = character(),
                     year = character(),
+                    q_type = character(),
+                    z_method = character(),
+                    sensor_src = character(),
                     n_days = numeric(),
                     f_days = numeric(),
                     resolution = character(),
@@ -23,10 +25,16 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/',
   
   for(i in 1:length(n_mods)) {
     
-    file <- list.files(mod_dir_fits,
-                       full.names = TRUE)[i]
+    # TODO: check this based on the outputs we get and for the other downstream funs
+    file <- gsub(mod_dir_fits,'',n_mods[j])
+    file_chunks <- unlist(stringr::str_split(file, '_'))
     
-    d <- readr::read_csv(file)
+    # reconstruct how the data were compiled
+    site <- file_chunks[1]
+    wyear <- file_chunks[2]
+    q_type <- gsub('Q-','', file_chunks[3])
+    z_method <- gsub('Z-','',file_chunks[4])
+    sensor_src <- gsub('.csv','', gsub('TS-','', file_chunks[5]))
     
     # TODO: check these
     site <- stringr::str_split(file, c('_','/'))[[2]][6] %>%

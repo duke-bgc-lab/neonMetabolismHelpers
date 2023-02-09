@@ -2,6 +2,6 @@
 
 export(nmh_apply_neon_q_eval)
 export(nmh_get_hydraulic_coef_data)
-export(nmh_get_neon_Q_sim)
 export(nmh_get_neon_data)
 export(nmh_get_neon_q_eval)
+export(nmh_get_neon_q_sim)

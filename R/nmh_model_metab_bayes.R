@@ -1,3 +1,4 @@
+#' @export
 nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
                                   log = TRUE) {
 

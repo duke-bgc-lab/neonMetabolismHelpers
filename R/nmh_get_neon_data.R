@@ -2,6 +2,7 @@
 nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                               dest_fp = NULL, # file path where all data is saved to
                               log = TRUE,
+                              log_new = TRUE,
                               site_filter = NULL, startdate = NA, enddate = NA,
                               neon_api_token = NA, stream_only = TRUE, forceParallel = FALSE,
                               check.size = TRUE,
@@ -13,16 +14,6 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
     # require macrosheds package to be loaded, and if user does not have it, option to install form github
     pkg_namespace_require(pkg = 'macrosheds', quietly = quietly)
 
-    # start logging for this function
-    logcode = 'nmh_get:'
-    if(log) {
-        cat("neonMetabolismHelpers Logging File", file="nmh_log.txt", sep="\n")
-        cat(paste0(logcode, "now logging nmh_get_neon_data() request"), file="nmh_log.txt", append=TRUE,sep="\n")
-        cat(paste0(logcode, "all logging from this request preceded by the following logging code prefix - ", logcode), file="nmh_log.txt", append=TRUE,sep="\n")
-
-        this_time = Sys.time()
-        cat(paste0(logcode, "system datetime at beginning,", this_time), file="nmh_log.txt", append=TRUE,sep="\n")
-    }
 
     # decide folder structure
     data_folder <- 'data'
@@ -35,8 +26,27 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
         dest_fp <- file.path(getwd(), data_folder)
     }
 
+    # start logging for this function
+    logfile_nmh = file.path(dest_fp, "data/nmh_log.txt")
+    logcode = 'nmh_get:'
+
     if(log) {
-        cat(paste0(logcode, "all raw data to be saved in", dest_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+      this_time = Sys.time()
+
+      if(log_new) {
+        cat(paste0("\n\n neonMetabolismHelpers Logging File           entry:", this_time, "\n\n\n"), file=logfile_nmh, sep="\n")
+        cat(paste0(logcode, "   all logging from this request preceded by the following logging code prefix - ", logcode), file=logfile_nmh, append=TRUE,sep="\n")
+      } else {
+        cat(paste0("\n\n neonMetabolismHelpers Logging File           entry:", this_time, "\n\n\n"), file=logfile_nmh, sep="\n", append = TRUE)
+        cat(paste0(logcode, "   all logging from this request preceded by the following logging code prefix - ", logcode), file=logfile_nmh, append=TRUE,sep="\n")
+      }
+
+      cat(paste0(logcode, "FUNCTION: nmh_get_neon_data() request"), file=logfile_nmh, append=TRUE,sep="\n")
+      cat(paste0(logcode, "____TIMESTAMP____ system datetime:,", this_time), file=logfile_nmh, append=TRUE,sep="\n")
+    }
+
+    if(log) {
+        cat(paste0(logcode, "all raw data to be saved in", dest_fp), file=logfile_nmh, append=TRUE,sep="\n")
     }
 
     # if 'data' folder does not exist
@@ -46,7 +56,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
         dir.create(dest_fp, recursive = TRUE)
 
         if(log) {
-            cat(paste0(logcode, "created directory at", dest_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+            cat(paste0(logcode, "created directory at", dest_fp), file=logfile_nmh, append=TRUE,sep="\n")
         }
     }
 
@@ -60,8 +70,8 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
     writeLines(paste('retrieving NEON data for', products_n, 'data products'))
 
     if(log) {
-        cat(paste0(logcode, "retreiving", products_n, "NEON data products:"), file="nmh_log.txt", append=TRUE,sep="\n")
-        cat(paste0(logcode, "\n    ", product_codes), file="nmh_log.txt", append=TRUE,sep="\n")
+        cat(paste0(logcode, "retreiving", products_n, "NEON data products:"), file=logfile_nmh, append=TRUE,sep="\n")
+        cat(paste0(logcode, "\n    ", product_codes), file=logfile_nmh, append=TRUE,sep="\n")
         cat(paste0(logcode, 'looping through product codes now'))
     }
 
@@ -69,7 +79,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
     for(product_code in product_codes) {
 
       if(log) {
-          cat(paste0(logcode, "-- retrieving ", product_code), file="nmh_log.txt", append=TRUE,sep="\n")
+          cat(paste0(logcode, "-- retrieving ", product_code), file=logfile_nmh, append=TRUE,sep="\n")
       }
 
       tryCatch(
@@ -81,11 +91,11 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
               stop("invalid q_type selection, must be 'raw' 'qaqc' or 'simulated'")
 
               if(log) {
-                 cat(paste0(logcode, "-- ERROR invalid q_type selection, must be 'raw' 'qaqc' or 'simulated'"), file="nmh_log.txt", append=TRUE,sep="\n")
+                 cat(paste0(logcode, "-- ERROR invalid q_type selection, must be 'raw' 'qaqc' or 'simulated'"), file=logfile_nmh, append=TRUE,sep="\n")
               }
             } else {
               if(log) {
-                 cat(paste0(logcode, "-- discharge data type:", q_type), file="nmh_log.txt", append=TRUE,sep="\n")
+                 cat(paste0(logcode, "-- discharge data type:", q_type), file=logfile_nmh, append=TRUE,sep="\n")
               }
             }
           }
@@ -106,7 +116,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
              )
 
              if(log) {
-                cat(paste0(logcode, "-- saving NEON discharge evaluation data at", neon_eval_q_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+                cat(paste0(logcode, "-- saving NEON discharge evaluation data at", neon_eval_q_fp), file=logfile_nmh, append=TRUE,sep="\n")
              }
 
              # also need to check if "raw" discharge exists, and retrieve if it is not there
@@ -118,7 +128,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
              # look for raw NEON Q data, necessary for QAQC
              if(!dir.exists(raw_q_data_fp)) {
                 if(log) {
-                   cat(paste0(logcode, "-- ERROR raw NEON discharge not found, cant run QAQC method", neon_eval_q_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+                   cat(paste0(logcode, "-- ERROR raw NEON discharge not found, cant run QAQC method", neon_eval_q_fp), file=logfile_nmh, append=TRUE,sep="\n")
                 }
 
                 stop(paste0('it looks like you do not have a directory at ', raw_q_data_fp,
@@ -133,7 +143,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
            if(product_code == 'DP4.00130.001' & q_type == 'simulated'){
 
              if(log) {
-                cat(paste0(logcode, "-- retrieving simulated Q data"), file="nmh_log.txt", append=TRUE,sep="\n")
+                cat(paste0(logcode, "-- retrieving simulated Q data"), file=logfile_nmh, append=TRUE,sep="\n")
              }
 
              # get simulated discharge
@@ -143,7 +153,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
 
              if(inherits(qsim, 'try-error')) {
                 if(log) {
-                   cat(paste0(logcode, "-- ERROR simulated Q retrieval failed"), file="nmh_log.txt", append=TRUE,sep="\n")
+                   cat(paste0(logcode, "-- ERROR simulated Q retrieval failed"), file=logfile_nmh, append=TRUE,sep="\n")
                 }
                  stop(paste('q simulation data download failed, try anohter q type'))
              } else {
@@ -159,7 +169,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                  }
 
                 if(log) {
-                   cat(paste0(logcode, "-- saved simulated NEON Q data to", raw_qsim_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+                   cat(paste0(logcode, "-- saved simulated NEON Q data to", raw_qsim_fp), file=logfile_nmh, append=TRUE,sep="\n")
                 }
 
                  writeLines(paste('download simulated NEON q data to:\n', "    ", raw_qsim_fp))
@@ -169,7 +179,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
            } else {
 
              if(log) {
-                cat(paste0(logcode, "-- retrieving", product_code), file="nmh_log.txt", append=TRUE,sep="\n")
+                cat(paste0(logcode, "-- retrieving", product_code), file=logfile_nmh, append=TRUE,sep="\n")
              }
 
              # get NEON product name, used for filepath
@@ -187,7 +197,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
 
              if(log) {
                cat(paste0(logcode, "-- saved NEON product:"," \n", product_code,
-                          " \n", product_name, "\n to ", data_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+                          " \n", product_name, "\n to ", data_fp), file=logfile_nmh, append=TRUE,sep="\n")
              }
 
              writeLines(paste('checking available NEON sites with data for product', product_name))
@@ -237,7 +247,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
              }
 
              if(log) {
-                cat(paste0(logcode, "-- querying ", avail_sites_n, " sites"), file="nmh_log.txt", append=TRUE,sep="\n")
+                cat(paste0(logcode, "-- querying ", avail_sites_n, " sites"), file=logfile_nmh, append=TRUE,sep="\n")
              }
 
              for(j in 1:length(avail_sites)) {
@@ -249,7 +259,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                  writeLines(paste('  site name:', site_name))
 
                  if(log) {
-                    cat(paste0(logcode, "-- querying ", site_name, "\n"), file="nmh_log.txt", append=TRUE,sep="\n")
+                    cat(paste0(logcode, "-- querying ", site_name, "\n"), file=logfile_nmh, append=TRUE,sep="\n")
                  }
 
                  # Download data product for the site
@@ -284,7 +294,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                      writeLines(paste('no data downloaded skipping', site_name))
 
                      if(log) {
-                        cat(paste0(logcode, "-- query failed, no data download, skipping"), file="nmh_log.txt", append=TRUE,sep="\n")
+                        cat(paste0(logcode, "-- query failed, no data download, skipping"), file=logfile_nmh, append=TRUE,sep="\n")
                      }
 
                      next
@@ -300,7 +310,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                      if(log) {
                        cat(paste0(logcode, "-- saved\n product:", product_code,
                                   "\n site:", site_name, " to ",
-                                  raw_data_dest), file="nmh_log.txt", append=TRUE,sep="\n")
+                                  raw_data_dest), file=logfile_nmh, append=TRUE,sep="\n")
                      }
                  }
 
@@ -320,7 +330,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                      )
 
                     if(log) {
-                       cat(paste0(logcode, "-- evaluated Q saved to", munged_q_data_fp), file="nmh_log.txt", append=TRUE,sep="\n")
+                       cat(paste0(logcode, "-- evaluated Q saved to", munged_q_data_fp), file=logfile_nmh, append=TRUE,sep="\n")
                     }
                  } # end evaluate q conditional
 

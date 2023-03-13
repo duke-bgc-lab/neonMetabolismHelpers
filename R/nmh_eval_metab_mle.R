@@ -1,3 +1,4 @@
+#' @export
 nmh_eval_metab_mle <- function(dir = 'data/model_runs/MLE/dat_fit/',
                                log = TRUE) {
 

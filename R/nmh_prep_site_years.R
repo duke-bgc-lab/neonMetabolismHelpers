@@ -1,3 +1,4 @@
+#' @export
 nmh_prep_site_years <- function(years = c('2016', '2021'),
                                 site = 'all') {
   

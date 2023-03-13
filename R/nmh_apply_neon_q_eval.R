@@ -55,7 +55,9 @@ nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, raw_q_dir = 'data/
   }
 
   if(nrow(q_evaluated) == 0) {
-    writeLines(paste0('no discharge data returned which passed QAQC evaluation, returning empty dataframe'))
+    writeLines(paste0('no discharge data returned which passed QAQC evaluation',
+                      ', returning empty dataframe. \n\n', 'this could be a correct rersult, if none of the data',
+                      'from your selected site and time frame pass the QAQC evaulation'))
     return(q_evaluated)
   }
 

@@ -25,6 +25,13 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
   setup_err <- FALSE
   fit_err <- FALSE
 
+  # Define where the model outputs will be saved
+  write_dir = glue::glue('data/model_runs/Bayes/')
+
+  # and create the directory if it doesn't exist
+  if(!dir.exists(write_dir))
+      dir.create(write_dir)
+
   # run through site-years in parallel
   # this loop contains various steps to prepare modeling
 
@@ -35,6 +42,19 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
     cat(paste0(logcode,' There are ', length(input_ts), ' site - wateryears to run'),
         file = 'nmh_log.txt', append = TRUE, sep = '\n')
   }
+
+  ran_trackers_2023_02_24 <- data.frame(list.files('data/model_runs/Bayes/trackers')) %>%
+      tidyr::separate('list.files..data.model_runs.Bayes.trackers..',
+                      c('site', 'year', 'q_type', 'z_method', 'sensor_src'),'_') %>%
+      mutate(src = 'tracker')
+
+  ran_models_2023_02_24 <- data.frame(list.files('data/model_runs/Bayes/daily')) %>%
+      tidyr::separate('list.files..data.model_runs.Bayes.daily..',
+                      c('site', 'year', 'q_type', 'z_method', 'sensor_src'),'_') %>%
+      mutate(src = 'daily')
+
+  ran_models <- rbind(ran_trackers_2023_02_24, ran_models_2023_02_24)
+
 
   # run through sit years in parallel
   neon_bayes_results <- foreach::foreach(m = 1:length(input_ts),
@@ -52,12 +72,17 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           z_method <- gsub('Z-','',file_chunks[4])
           sensor_src <- gsub('.csv','', gsub('TS-','', file_chunks[5]))
 
-          # Define where the model outputs will be saved
-          write_dir = glue::glue('data/model_runs/Bayes/')
+          tracker_exists <- ran_models %>%
+              dplyr::filter(site %in% !!site,
+                            year %in% wyear,
+                            q_type %in% !!q_type,
+                            z_method %in% !!z_method,
+                            sensor_src %in% !!sensor_src,
+                            src == 'tracker')
 
-          # and create the directory if it doesn't exist
-          if(!dir.exists(write_dir))
-            dir.create(write_dir)
+          if(nrow(tracker_exists > 0))
+              next
+
 
           # define cores and times
           session_id = Sys.getpid()
@@ -144,40 +169,40 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           }
 
           # Step 3: check that input data is good (not all NAs)
-          min_ratio <- 1 # 1 = 100% NAs in a column of the dataframe
-          for(i in 1:ncol(input_dat[-1])){
-
-            # define the column names that have data
-            vars <- names(input_dat[-1])
-
-            # which column to examine first
-            var <- vars[i]
-
-            # how many observations of that variable
-            length <- input_dat[,var] %>%
-              nrow()
-
-            # how many NAs in that variable
-            nas <- input_dat[,var] %>%
-              dplyr::filter(is.na(.)) %>%
-              nrow()
-
-            # what is the percentage of NAs in that column
-            ratio <- (nas/length)
-
-            # if the ratio is 100% NAs, record that in the tracker file and jump to the next
-            if(ratio == min_ratio) {
-              cat('Step_3_Error', file = tracker_fp, sep = "\n", append=TRUE)
-              cat(glue::glue('---- ', '{site} has no {var} data, jumping to next site-year'),
-                  file = tracker_fp, sep = "\n", append=TRUE)
-              writeLines(glue::glue('{site} has no {var} data, jumping to next site-year'))
-            } else { # or keep going
-              cat(glue::glue('Step_3_{i}_Success'),
-                  file = tracker_fp, sep = "\n", append=TRUE)
-              cat(glue::glue('---- ', '{site} has {round(as.numeric(ratio)*100,2)}% NA of {var} data'),
-                  file = tracker_fp, sep = "\n", append=TRUE)
-            }
-          } # end for loop
+          # min_ratio <- 1 # 1 = 100% NAs in a column of the dataframe
+          # for(i in 1:ncol(input_dat[-1])){
+          #
+          #   # define the column names that have data
+          #   vars <- names(input_dat[-1])
+          #
+          #   # which column to examine first
+          #   var <- vars[i]
+          #
+          #   # how many observations of that variable
+          #   length <- input_dat[,var] %>%
+          #     nrow()
+          #
+          #   # how many NAs in that variable
+          #   nas <- input_dat[,var] %>%
+          #     dplyr::filter(is.na(.)) %>%
+          #     nrow()
+          #
+          #   # what is the percentage of NAs in that column
+          #   ratio <- (nas/length)
+          #
+          #   # if the ratio is 100% NAs, record that in the tracker file and jump to the next
+          #   if(ratio == min_ratio) {
+          #     cat('Step_3_Error', file = tracker_fp, sep = "\n", append=TRUE)
+          #     cat(glue::glue('---- ', '{site} has no {var} data, jumping to next site-year'),
+          #         file = tracker_fp, sep = "\n", append=TRUE)
+          #     writeLines(glue::glue('{site} has no {var} data, jumping to next site-year'))
+          #   } else { # or keep going
+          #     cat(glue::glue('Step_3_{i}_Success'),
+          #         file = tracker_fp, sep = "\n", append=TRUE)
+          #     cat(glue::glue('---- ', '{site} has {round(as.numeric(ratio)*100,2)}% NA of {var} data'),
+          #         file = tracker_fp, sep = "\n", append=TRUE)
+          #   }
+          # } # end for loop
 
           # Step 4: define KQ priors and model specifications
           # pull the earliest and latest date in the modeled run for file naming purposes
@@ -201,7 +226,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
             minQ <- input_dat %>%
                 dplyr::mutate(logQ = log(discharge)) %>%
                 dplyr::filter(is.finite(logQ)) %>%
-                dplyr::summarise(minQ = min(discharge, na.rm = TRUE)) %>%
+                dplyr::summarise(minQ = min(logQ, na.rm = TRUE)) %>%
                 dplyr::pull()
 
             logQ <- ifelse(is.finite(log(input_dat$discharge)),
@@ -351,6 +376,10 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
             cat('Step_6_Error', file=tracker_fp, sep = "\n", append=TRUE)
           } else
             cat('Step_6_Success', file=tracker_fp, sep = "\n", append=TRUE)
+
+          rm(specs_out, daily_out, data_out, input_dat, mle_priors)
+
+          gc()
 
           # write the site-year tracker information
           return(neon_bayes_row)

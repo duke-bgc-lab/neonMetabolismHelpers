@@ -40,7 +40,7 @@ The default for is to download all possible data, which may take quite a long ti
 | Discharge                           | [DP4.00130.001](https://data.neonscience.org/data-products/DP4.00130.001#:~:text=NEON%20calculates%20continuous%20stream%20discharge,Elevation%20of%20surface%20water%2C%20DP1.) | Continuous discharge                                 |
 | Light                               | [DP1.20042.001](https://data.neonscience.org/data-products/DP1.20042.001)                                                                                                        | Photosynthetically active radiation at water surface |
 | Barometric pressure                 | [DP1.00004.001](https://data.neonscience.org/data-products/DP1.00004.001)                                                                                                        | Barometric pressure                                  |
-| Water temperature, Dissolved oxygen | [DP.202288.001](https://data.neonscience.org/data-products/DP1.20288.001)                                                                                                        | Water quality                                        |
+| Water temperature, Dissolved oxygen | [DP.20288.001](https://data.neonscience.org/data-products/DP1.20288.001)                                                                                                        | Water quality                                        |
 
 Alternatively, `nmh_get_neon_data()` can be used to download any NEON data product indiviudally with the same site and date range arguments; this is effectively a wrapper around `neonUtilities::loadByProduct()` .
 

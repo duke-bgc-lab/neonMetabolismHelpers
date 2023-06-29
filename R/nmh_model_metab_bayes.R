@@ -20,6 +20,13 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
     ode_method = 'trapezoid',
     deficit_src = 'DO_mod',
     engine = 'stan')
+  
+  # Define where the model outputs will be saved
+  write_dir = glue::glue('data/model_runs/Bayes/')
+  
+  # and create the directory if it doesn't exist
+  if(!dir.exists(write_dir))
+    dir.create(write_dir)
 
   # Define fault tolerances
   has_data <- FALSE
@@ -83,7 +90,6 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
 
           if(nrow(tracker_exists > 0))
               next
-
 
           # define cores and times
           session_id = Sys.getpid()
@@ -172,17 +178,17 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           # Step 3: check that input data is good (not all NAs)
           # min_ratio <- 1 # 1 = 100% NAs in a column of the dataframe
           # for(i in 1:ncol(input_dat[-1])){
-          #
+          # 
           #   # define the column names that have data
           #   vars <- names(input_dat[-1])
-          #
+          # 
           #   # which column to examine first
           #   var <- vars[i]
-          #
+          # 
           #   # how many observations of that variable
           #   length <- input_dat[,var] %>%
           #     nrow()
-          #
+          # 
           #   # how many NAs in that variable
           #   nas <- input_dat[,var] %>%
           #     dplyr::filter(is.na(.)) %>%
@@ -191,6 +197,7 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
           #   # what is the percentage of NAs in that column
           #   ratio <- (nas/length)
           #
+
           #   # if the ratio is 100% NAs, record that in the tracker file and jump to the next
           #   if(ratio == min_ratio) {
           #     cat('Step_3_Error', file = tracker_fp, sep = "\n", append=TRUE)
@@ -280,6 +287,9 @@ nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
 
           # Step 5: run the model
           tryCatch({
+            
+            cat('Step_5_starting_model_run', file = tracker_fp, sep = '\n', append = TRUE)
+            
             # run the model
             dat_metab <- streamMetabolizer::metab(specs = bayes_specs,
                                                   data = input_dat)

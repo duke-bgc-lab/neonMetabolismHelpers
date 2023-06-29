@@ -15,7 +15,7 @@ full_days <- function(df) {
   
   df_out <- df %>%
     dplyr::filter(!solar.time %in% bad_days) %>%
-    dplyr::mutate(date = date(solar.time)) %>%
+    dplyr::mutate(date = lubridate::date(solar.time)) %>%
     dplyr::select(-date)
   return(df_out)
 }

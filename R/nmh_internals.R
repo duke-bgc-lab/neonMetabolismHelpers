@@ -412,39 +412,38 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
   }
 }
 
-get_neon_site_data <- function(arg = 'details') {
+get_neon_site_data <- function(download = TRUE) {
   
-  # create the site codes
-  us_states <- USAboundaries::us_states()
-  
-  site_data <- macrosheds::ms_load_sites() %>% 
-    dplyr::filter(domain == 'neon',
-           site_type == 'stream_gauge')
-  
-  site_geo <- site_data %>%
-    sf::st_as_sf(coords = c('longitude', 'latitude'), crs = 4326)
-  
-  region_code = sf::st_join(site_geo, us_states) %>%
-    dplyr::pull(state_abbr)
-  
-  sites <- site_data %>%
-    dplyr::pull(site_code)
-  
-  # build a data frame with sites, site codes, and dates that will carry out of the loop
-  # sp_code is the look-up site name in streampulse
-  site_deets <- data.frame(
-    site_code = sites,
-    sp_code = paste0(region_code, '_', sites, 'temp'),
-    start_date = NA,
-    end_date = NA
-  )
-  
-  if(arg == 'details') {
-    return(site_deets)
-  } else {
-    return(site_data)
-  }
+  if(download){
+    dest_dir <- 'data/site_data/'
+    dest_fn <- 'neon_site_data.csv'
+    
+    destfile <- file.path(dest_dir, dest_fn)
+    
+    if(!dir.exists(dest_dir)){
+      dir.create(dest_dir)
+    }
+    
+    download.file(url = 'https://www.neonscience.org/sites/default/files/NEON_Field_Site_Metadata_20231026.csv)',
+                  destfile = destfile)
+    
+    site_data <- readr::read_csv(destfile)
+    
+    table_1 <- site_data %>% 
+      dplyr::select(Domain = field_domain_id,
+                    `Site Code` = field_site_id,
+                    `Site Name` = field_site_name,
+                    Latitude = field_latitude,
+                    Longitude = field_longitude,
+                    Elevation = field_mean_elevation_m,
+                    `Watershed Area (km2)` = field_watershed_size_km2)
+    
+    readr::write_csv(table_1,
+                     'data/1_neon_site_data.csv')
+    
+  }  
 }
+
 
 read_all_neon_feathers <- function(file_path, by_site = TRUE){
   

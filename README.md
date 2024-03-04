@@ -23,7 +23,7 @@ We allow the user to select three types of discharge data to serve as inputs to 
 
 -   'qaqc': based on the results of [Rhea et al. (2022)](https://www.hydroshare.org/resource/03c52d47d66e40f4854da8397c7d9668/), we recommend using their evaluation of the NEON discharge product, and the evaluation is imported using `get_neon_Q_eval()`.
 
--   'simulation': this uses discharge simulations prepared by the [MacroSheds](https://github.com/MacroSHEDS/macrosheds) project and can be accessed for each site using `nmh_get_neon_Q_sim()`. More details on these simulations can be found [add link here].
+-   'simulation': this uses discharge simulations prepared by the [MacroSheds](https://github.com/MacroSHEDS/macrosheds) project and can be accessed for each site using `nmh_get_neon_Q_sim()`. More details on these simulations can be found [here](https://hess.copernicus.org/articles/28/545/2024/).
 
 ## Get data
 
@@ -40,7 +40,7 @@ The default for is to download all possible data, which may take quite a long ti
 | Discharge                           | [DP4.00130.001](https://data.neonscience.org/data-products/DP4.00130.001#:~:text=NEON%20calculates%20continuous%20stream%20discharge,Elevation%20of%20surface%20water%2C%20DP1.) | Continuous discharge                                 |
 | Light                               | [DP1.20042.001](https://data.neonscience.org/data-products/DP1.20042.001)                                                                                                        | Photosynthetically active radiation at water surface |
 | Barometric pressure                 | [DP1.00004.001](https://data.neonscience.org/data-products/DP1.00004.001)                                                                                                        | Barometric pressure                                  |
-| Water temperature, Dissolved oxygen | [DP.20288.001](https://data.neonscience.org/data-products/DP1.20288.001)                                                                                                        | Water quality                                        |
+| Dissolved oxygen | [DP.20288.001](https://data.neonscience.org/data-products/DP1.20288.001)                                                                                                        | Water quality                                        |
 
 Alternatively, `nmh_get_neon_data()` can be used to download any NEON data product indiviudally with the same site and date range arguments; this is effectively a wrapper around `neonUtilities::loadByProduct()` .
 
@@ -55,7 +55,7 @@ The remaining functions relate to how discharge is processed, discussed above:
 
 ## Prepare time series data
 
-After the data from NEON and/or MacroSheds has been downloaded, the data are prepared into sub-daily (e.g. 15 minute) time series files for each site using `nmh_prep_metab()` that will serve as inputs to `streamMetabolizer` . `streamMetabolizer` requires input time series with as a data frame with required column names: `solar.time`, `DO.obs`, `DO.sat`, `temp.water`, `discharge`, `depth`, `light` . Therefore, the goal of `nmh_prep_data()` is to perform the formatting, necessary calculations, and data access where needed and output csv files for each site.
+After the data from NEON and/or MacroSheds has been downloaded, the data are prepared into sub-daily (e.g. 15 minute) time series files for each site using `nmh_prep_metab()` that will serve as inputs to `streamMetabolizer` . `streamMetabolizer` requires input time series with as a data frame with required column names: `solar.time`, `DO.obs`, `DO.sat`, `temp.water`, `discharge`, `depth`, `light` . Therefore, the goal of `nmh_prep_neon_data()` is to perform the formatting, necessary calculations, and data access where needed and output csv files for each site.
 
 The time-series starts with the dissolved oxygen and water temperature data, as these are the core data in modeling metabolism. In the data paper associated with this R package, we have taken additional steps to process these data before modeling. Data were downloaded from NEON and uploaded to the [StreamPULSE portal](https://data.streampulse.org/index), and were visually QAQC'd in addition to the quality flags (QF) that NEON populates in their data products. The QAQC'd data were accessed from the `StreamPULSE` R package and the following steps were applied.
 
@@ -96,12 +96,6 @@ The results of this process will become priors in the Bayesian model run. These 
 -   Before modeling, the following two functions should be run.
 
     -   `nmh_prep_bayes_model()` : checks for installation of `streamMetabolizer` v0.12.0 and `rstan`. If those packages are not installed, it will do so.
-
-    -   `nmh_prep_site_year()`: Create a data frame with each site-year intended to model that is looped over in the model function. This function returns a data frame `site_years` directly to the environment
-
-        -   `years = c('2016', '2021')` : specify the range of years intended to use. 2016 and 2021 are the defaults
-
-        -   `site = 'all'` : this calls `get_neon_site_data()` to obtain all 27 sites, but can be subset to a string of the desired sites (e.g. `site = c('ARIK', 'FLNT')` )
 
 The function that runs the model, `nmh_model_metab_bayes()`, is extensive and is broken into 5 steps, which we summarize here. All of these processes are handled within the function and rely on the suggested directory structure presented above.
 

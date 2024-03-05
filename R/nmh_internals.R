@@ -424,7 +424,7 @@ get_neon_site_data <- function(download = TRUE) {
       dir.create(dest_dir)
     }
     
-    download.file(url = 'https://www.neonscience.org/sites/default/files/NEON_Field_Site_Metadata_20231026.csv)',
+    download.file(url = 'https://www.neonscience.org/sites/default/files/NEON_Field_Site_Metadata_20231026.csv',
                   destfile = destfile)
     
     site_data <- readr::read_csv(destfile)

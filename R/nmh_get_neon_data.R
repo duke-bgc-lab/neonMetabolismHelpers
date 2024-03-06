@@ -1,10 +1,54 @@
+#' Download NEON Products, with options for key alternative data sources
+#'
+#' @author Nick Marzolf, \email{@@}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#'
+#' @param product_codes character. Character or character vector of valid NEON product codes, e.g. "DP4.00130.001",
+#' will default to 'all' which will download all NEON products used in metabolism model -- equivalent to
+#' product_code = c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP1.20053.001', 'DP1.20264.001','DP1.20288.001')
+#' @param q_type character. If \code[q_type] = 'raw', discharge data will be aquired directly from the NEON
+#' API, if \code[q_type] = 'qaqc' discharge data will be retrieved from data assessed for quality and filtered as described in
+#' \href[Rhea et al. 2023]{https://www.nature.com/articles/s41597-023-01983-w}, if \code[q_type] = 'simulated' discharge generated
+#' via linear regression from sufficiently nearby and representative gauges and/or neural network predictions
+#' as described in [Vlah et al. 2023]{https://doi.org/10.5194/egusphere-2023-1178}.
+#' @param dest_fp character. A \code{data.frame} of precipitation or
+#'    stream chemistry data in MacroSheds format and in units of mg/L.
+#' @param log logical. If TRUE information about this function run will be printed to a text file.
+#' @param log_new logical. If TRUE any previous logfile will be overwritten, if one exists at the standard filepath.
+#' @param site_filter character. Character or character vector of valid NEON site codes passed to this argument, e.g. "ARIK", will be excluded from the retrieval.
+#' @param startdate character. Of format "YYYY-MM", e.g. "2016-06"
+#' @param enddate character. Of format "YYYY-MM", e.g. "2016-06"
+#' @param neon_api_token character. NEON API token, which must be aquired by user from NEON API service,
+#' see \href[https://www.neonscience.org/resources/learning-hub/tutorials/neon-api-tokens-tutorial]{NEON API token explanation here}.
+#' To be passed to [neonUtilities::getProductInfo()], not required, but highly reccomended for retrieval as linkes downloads to a user
+#' account, and increases download speeds.
+#' @param stream_only logical. If TRUE, will only retrieve data from NEON sites of type "stream".
+#' @param forceParallel logical. Passed to [neonUtilities::loadByProduct()], see the \href[https://cran.r-project.org/web/packages/neonUtilities/index.html]{NEON R package documentation} for details.
+#' @param check.size logical. Checks download size and offers user opportunity to cancel if large. Passed to [neonUtilities::loadByProduct()], see the \href[https://cran.r-project.org/web/packages/neonUtilities/index.html]{NEON R package documentation} for details.
+#' @param quietly logical. Suppresses non-mandatory function warnings and print statements.
+#' @details This function is a wrapper of multiple neonUtilities functions, meant to consolidate NEON data retrieval for stream metabolism modeling.
+#' @seealso [nmh_get_hydraulic_coef_data()], [nmh_get_neon_data()], [nmh_get_neon_q_eval()], [nmh_get_neon_q_sim()], [nmh_get_scaling_coefs()], [nmh_get_tomb_q()]
+#' @examples
+#' nmh_get_neon_data(
+#'   product_codes = c('DP4.00130.001', 'DP1.20042.001'),
+#'   q_type = 'raw',
+#'   site_filter = 'ARIK',
+#'   startdate = '2017-01',
+#'   enddate = '2017-12'
+#' )
 #' @export
-nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
+
+nmh_get_neon_data <- function(product_codes = 'all',
+                              q_type = 'raw',
                               dest_fp = NULL, # file path where all data is saved to
                               log = TRUE,
                               log_new = TRUE,
-                              site_filter = NULL, startdate = NA, enddate = NA,
-                              neon_api_token = NA, stream_only = TRUE, forceParallel = FALSE,
+                              site_filter = NULL,
+                              startdate = NA,
+                              enddate = NA,
+                              neon_api_token = NA,
+                              stream_only = TRUE,
+                              forceParallel = FALSE,
                               check.size = TRUE,
                               quietly = FALSE
                               ) {
@@ -34,8 +78,10 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
       this_time = Sys.time()
 
       if(log_new) {
+        warning(paste0("log_new is set to TRUE, any previous logfile contents will be overwritten at", logfile_nmh))
+
         cat(paste0("\n\n neonMetabolismHelpers Logging File           entry:", this_time, "\n\n\n"), file=logfile_nmh, sep="\n")
-        cat(paste0(logcode, "   all logging from this request preceded by the following logging code prefix - ", logcode), file=logfile_nmh, append=TRUE,sep="\n")
+        cat(paste0(logcode, "   all logging from this request preceded by the following logging code prefix - ", logcode), file=logfile_nmh, append=FALSE,sep="\n")
       } else {
         cat(paste0("\n\n neonMetabolismHelpers Logging File           entry:", this_time, "\n\n\n"), file=logfile_nmh, sep="\n", append = TRUE)
         cat(paste0(logcode, "   all logging from this request preceded by the following logging code prefix - ", logcode), file=logfile_nmh, append=TRUE,sep="\n")
@@ -60,15 +106,19 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
         }
     }
 
+    products_n = length(product_codes)
+
     # default is to retrieve all data necessary for NEON metabolism, this is
-    if(product_codes == 'all') {
+    if('all' %in% product_codes) {
       # products are: discharge, light, barometric pressure, water temp, & dissolved oxygen
       product_codes <- c('DP4.00130.001', 'DP1.20042.001', 'DP1.00004.001', 'DP1.20053.001', 'DP1.20264.001','DP1.20288.001')
     }
 
-    products_n = length(product_codes)
-    writeLines(paste('retrieving NEON data for', products_n, 'data products'))
+    if(!quietly) {
+        warning("retreiving the following products:\n", cat(paste(product_codes), sep = "\n"))
+    }
 
+    writeLines(paste('retrieving NEON data for', products_n, 'data products'))
     if(log) {
         cat(paste0(logcode, "retreiving", products_n, "NEON data products:"), file=logfile_nmh, append=TRUE,sep="\n")
         cat(paste0(logcode, "\n    ", product_codes), file=logfile_nmh, append=TRUE,sep="\n")
@@ -346,5 +396,3 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
       ) # end try
     } # end product loop
 }
-
-## nmh_get_neon_data(product_codes = 'DP4.00130.001', q_type = 'raw', site_filter = 'ARIK', startdate = '2017-01', enddate = '2017-12')

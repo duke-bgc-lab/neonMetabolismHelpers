@@ -15,16 +15,6 @@ At the coarsest description, these functions execute discrete steps to get data 
 
 All functions in this package use the prefix `nmh_`, which is a pseudo-acronym for neonMetabolismHelpers. Following this prefix is a verb (e.g. `nhm_get_`, `nhm_prep_`, `nhm_model_`, etc.) that specifies what is happening in that function. `nmh_get_` means data is being acquired from NEON or elsewhere to fill gaps in the NEON data. `nmh_prep_` prepares either input time series data or model designations.
 
-### Modeling types
-
-We allow the user to select three types of discharge data to serve as inputs to the metabolism model, specified as `q_type` throughout the package, data, and file structure.
-
--   'raw': If the user wants to use discharge direct from the NEON data product, we designate this as 'raw'. As NEON does not collect discharge at the 'TOMB' site, we exclude this site from the 'raw' designation
-
--   'qaqc': based on the results of [Rhea et al. (2022)](https://www.hydroshare.org/resource/03c52d47d66e40f4854da8397c7d9668/), we recommend using their evaluation of the NEON discharge product, and the evaluation is imported using `get_neon_Q_eval()`.
-
--   'simulation': this uses discharge simulations prepared by the [MacroSheds](https://github.com/MacroSHEDS/macrosheds) project and can be accessed for each site using `nmh_get_neon_Q_sim()`. More details on these simulations can be found [here](https://hess.copernicus.org/articles/28/545/2024/).
-
 ## Get data
 
 The following functions obtain data requisite to model stream metabolism. The requisite data from NEON are found in the following data types and are downloaded using `nmh_get_neon_data()` . Users can specify which:
@@ -53,11 +43,22 @@ The remaining functions relate to how discharge is processed, discussed above:
 -   `nmh_get_neon_Q_eval()` : downloads the results from Rhea et al. (2022) as a csv file
 -   `nmh_get_neon_Q_sim()` : downloads the simulated discharge from the NEON sites from the MacroSheds portal
 
+
+### Modeling types
+
+We allow the user to select three types of discharge data to serve as inputs to the metabolism model, specified as `q_type` throughout the package, data, and file structure.
+
+-   'raw': If the user wants to use discharge direct from the NEON data product, we designate this as 'raw'. As NEON does not collect discharge at the 'TOMB' site, we exclude this site from the 'raw' designation
+
+-   'qaqc': based on the results of [Rhea et al. (2022)](https://www.hydroshare.org/resource/03c52d47d66e40f4854da8397c7d9668/), we recommend using their evaluation of the NEON discharge product, and the evaluation is imported using `get_neon_Q_eval()`.
+
+-   'simulation': this uses discharge simulations prepared by the [MacroSheds](https://github.com/MacroSHEDS/macrosheds) project and can be accessed for each site using `nmh_get_neon_Q_sim()`. More details on these simulations can be found [here](https://hess.copernicus.org/articles/28/545/2024/).
+
 ## Prepare time series data
 
 After the data from NEON and/or MacroSheds has been downloaded, the data are prepared into sub-daily (e.g. 15 minute) time series files for each site using `nmh_prep_metab()` that will serve as inputs to `streamMetabolizer` . `streamMetabolizer` requires input time series with as a data frame with required column names: `solar.time`, `DO.obs`, `DO.sat`, `temp.water`, `discharge`, `depth`, `light` . Therefore, the goal of `nmh_prep_neon_data()` is to perform the formatting, necessary calculations, and data access where needed and output csv files for each site.
 
-The time-series starts with the dissolved oxygen and water temperature data, as these are the core data in modeling metabolism. In the data paper associated with this R package, we have taken additional steps to process these data before modeling. Data were downloaded from NEON and uploaded to the [StreamPULSE portal](https://data.streampulse.org/index), and were visually QAQC'd in addition to the quality flags (QF) that NEON populates in their data products. The QAQC'd data were accessed from the `StreamPULSE` R package and the following steps were applied.
+The time-series starts with the dissolved oxygen and water temperature data, as these are the core data in modeling metabolism. Data were downloaded from NEON and uploaded to the [StreamPULSE portal](https://data.streampulse.org/index). We allow for 2 levels of scrutiny of these data: 1) use with removing the QFs that are published in the NEON data product or 2) visually QAQC'd in addition to the quality flags (QF) that NEON populates in their data products. The QAQC'd data were accessed from the `StreamPULSE` R package.
 
 From these data, saturation concentration of dissolved oxygen (`DO.sat`) is calculated using barometric pressure. If barometric pressure is available for a site and date from NEON (see above), we use those data; if not, we use an internal function in the `streamPULSE` R package which searches for the nearest NOAA weather station and accesses the barometric pressure at that station. With these data, we use `streamMetabolizer::calc_DO_sat(…, salinity = 0, model = 'garcia-benson')` to estimate `DO.sat`.
 
@@ -73,11 +74,7 @@ Finally, light is added to the time-series. If light exists from NEON, those 1 m
 
 At this final step in building the time series, mean reach depth is estimated using `streamMetabolizer::calc_depth()`. This calculatation estimates the mean depth of the reach upstream of the sensor that contribute to the benthic area that has influence on the sensor. The coefficients, c and f, can be specific using the `z_method` argument. If `z_method == 'model'`, values of (`c = 0.409, f = 0.294`) are estimated in [Raymond et al. (2012)](https://aslopubs.onlinelibrary.wiley.com/doi/10.1215/21573689-1597669) for the continental US. Alternatively, if `z_method == 'meas'`, site-specific values are available through processing the width measurements in the [Reaeration field and lab collection](DP1.20190.001) and instantaneous depth, velocity, and discharge measurements in the [Discharge field collection](https://data.neonscience.org/data-products/DP1.20048.001) NEON data products. The site-specific coefficients for 24/27 sites can be found in `data/MacroSheds/NEON_site_scaling_coefs.csv` . For the sites where there are no measaurements (FLNT, TOMB, BLWA) we use the default. Additionally, where the R^2^ of the power law scaling is \<0.1, we use the default values.
 
-As with the raw data, this function writes these output csv files into a directory. In the same data folder where the raw data are saved, each site csv are saved to `data/sm_input/`, and depending on the discharge data used, the next directory will be raw, qaqc, or simulation. Each file will be saved as `{site}_{qtype}_smReady.csv` (e.g. `data/sm_input/raw/ARIK_raw_smReady.csv`)
-
-### Plot time-series \*this function is incomplete (1/12/23)
-
-`nmh_plot_metab_inputs()` will plot the input time series and allow a comparison between different q_types included by the user. These files will be saved to a new directory `figures/sm_input/` .
+As with the raw data, this function writes these output csv files into a directory. In the same data folder where the raw data are saved, each site csv are saved to `data/sm_input/`, and depending on the discharge data used, the next directory will be raw, qaqc, or simulation. Each file will be saved as `{site}_{year}_{q-type}_{z-method}_{sensor-source}.csv`.
 
 ## Define gas exchange-discharge relationship
 
@@ -95,7 +92,7 @@ The results of this process will become priors in the Bayesian model run. These 
 
 -   Before modeling, the following two functions should be run.
 
-    -   `nmh_prep_bayes_model()` : checks for installation of `streamMetabolizer` v0.12.0 and `rstan`. If those packages are not installed, it will do so.
+    -   `nmh_prep_bayes_model()` : checks for installation of `streamMetabolizer` v0.12.0, `unitted`, and `rstan`. If those packages are not installed, it will do so.
 
 The function that runs the model, `nmh_model_metab_bayes()`, is extensive and is broken into 5 steps, which we summarize here. All of these processes are handled within the function and rely on the suggested directory structure presented above.
 

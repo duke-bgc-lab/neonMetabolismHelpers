@@ -1,3 +1,6 @@
+# TODO: check the version of this file on my laptop
+
+
 nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
                                      q_type = c('raw', 'qaqc', 'simulated')) {
   

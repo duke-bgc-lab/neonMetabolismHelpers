@@ -532,6 +532,7 @@ get_streampulse_data <- function(site_deets,
   
 } # end function
 
+
 pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.com/MacroSHEDS/macrosheds.git", quietly = FALSE) {
   res <- try(requireNamespace(pkg, quietly = quietly))
   if(res) {
@@ -553,6 +554,7 @@ pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.c
     }
   }
 }
+
 
 calc_DO_sat <- function (temp.water, pressure.air, salinity.water = u(0, "PSU"), 
                          model = "garcia-benson", ...) {

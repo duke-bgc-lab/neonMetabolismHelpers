@@ -1,38 +1,58 @@
-nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                     q_type = c('raw', 'qaqc', 'simulated')) {
+nmh_estimate_metab_bayes <- function(dir = 'data/model_runs/Bayes/') {
   
-  if(!q_type %in% c('raw','qaqc', 'simulated')){
-    stop('Error: please select a discharge input from:\n 1) "raw": Raw NEON input\n 2) "source": NEON discharge evaluated by Rhea et al. (accepted), or\n 3) "simulated": NEON discharge simulations by the Macrosheds project')
-  }
   
-  file_dir <- glue::glue(mod_dir, q_type, '/Bayes/')
+  dir_daily <- glue::glue(dir, 'daily/')
   
-  mod_dir <- glue::glue(file_dir, 'daily')
+  mods <- list.files(dir_daily,
+                     full.names = TRUE)
   
-  n_mods <- length(list.files(mod_dir,
+  n_mods <- length(list.files(dir_daily,
                               full.names = TRUE))
+  
+  diagnostic <- readr::read_csv('data/model_runs/Bayes/diag_neon_metab_bayes.csv')
+  
+  good_years <- diagnostic %>% 
+    dplyr::filter(ER_K_r2 < 0.6,
+                  K_median < 100)
   
   for(i in 1:n_mods) {
     
-    daily <- list.files(mod_dir,
-                        full.names = TRUE)[i]
+    file <- mods[i]
+    file_chunks <- unlist(stringr::str_split(file, '_'))
     
-    site <- stringr::str_split(daily, c('_','/'))[[2]][6] %>%
-      substr(.,1,4)
+    # reconstruct how the data were compiled
+    site <- file_chunks[2] %>% 
+      substr(18,21)
+    wyear <- file_chunks[3]
+    q_type <- gsub('Q-','', file_chunks[4])
+    z_method <- gsub('z-','',file_chunks[5])
+    sensor_src <- gsub('.csv','', gsub('TS-','', file_chunks[6]))
     
-    start_date <- stringr::str_split(daily, '_')[[1]][3]
+    good_year <- diagnostic %>% 
+      dplyr::filter(site %in% !!site,
+                    wyear %in% !!wyear,
+                    q_type %in% !!q_type,
+                    z_method %in% !!z_method,
+                    sensor_src %in% !!sensor_src)
     
-    end_date <- stringr::str_split(daily, '_')[[1]][4]
+    if(nrow(good_year) == 0)
+      next
     
-    year <- substr(start_date, 1,4)
+    # read in data
+    d <- readr::read_csv(file)
     
-    d <- readr::read_csv(daily)
-    
+    # pull out dates
+    start_date <- dplyr::pull(d[1, 'date'])
+    end_date <- dplyr::pull(d[length(d$date), 'date'])
+
     if('GPP_50pct' %in% names(d)) {
       
       d_clean <- d %>%
         dplyr::filter(GPP_50pct > -0.5,
-                      ER_50pct < 0.5) %>%
+                      ER_50pct < 0.5,
+                      GPP_Rhat <= 1.2,
+                      ER_Rhat <= 1.2,
+                      K600_daily_Rhat <= 1.2) %>%
         dplyr::select(date,
                       GPP = GPP_50pct,
                       GPP.lower = GPP_2.5pct,
@@ -52,9 +72,13 @@ nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
         )
     }
     
-    dir_DO <- glue::glue(file_dir, 'mod_and_obs_DO')
+    if(nrow(d_clean) == 0){
+      next
+    }
     
-    DO <- try(readr::read_csv(glue::glue(dir_DO, '/', site, '_', start_date, '_', end_date, '_mod_and_obs_DO.csv')))
+    dir_DO <- glue::glue(dir,'mod_and_obs_DO/')
+    
+    DO <- try(readr::read_csv(glue::glue(dir_DO, '/', site, '_', wyear, '_Q-', q_type, '_z-',z_method, '_TS-',sensor_src,'_mod_and_obs_DO.csv')))
     
     if(inherits(DO, 'try-error')){
       next
@@ -67,7 +91,7 @@ nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
     
     res <- glue::glue(diff(DO$solar.time) %>%
                         dplyr::first(),
-                      'min')
+                      ' min')
     
     DO_clean <- DO %>%
       dplyr::group_by(date) %>%
@@ -86,19 +110,24 @@ nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
                                DO_clean,
                                'date') %>%
       dplyr::mutate(resolution = res,
-                    site = site) %>%
-      dplyr::select(site, resolution, date, GPP, GPP.lower, GPP.upper, GPP.n_eff, GPP.Rhat,
-                    ER, ER.lower, ER.upper, ER.n_eff, ER.Rhat, K600, K600.lower, K600.upper,
-                    K600.n_eff, K600.Rhat, DO.obs, DO.sat, DO.amp, DO.psat, depth, temp.water,
-                    discharge, shortwave)
+                    site = site,
+                    discharge_type = q_type,
+                    mean_depth_type = z_method,
+                    sensor_source = sensor_src) %>%
+      dplyr::select(site, discharge_type, mean_depth_type, sensor_source,
+                    resolution, date, 
+                    GPP, GPP.lower, GPP.upper, GPP.n_eff, GPP.Rhat,
+                    ER, ER.lower, ER.upper, ER.n_eff, ER.Rhat, 
+                    K600, K600.lower, K600.upper, K600.n_eff, K600.Rhat, 
+                    DO.obs, DO.sat, DO.amp, DO.psat, depth, temp.water, discharge, shortwave)
     
-    write_dir <- glue::glue(file_dir, 'estimates/')
+    write_dir <- glue::glue(dir, 'estimates/')
     
     if(!dir.exists(write_dir))
       dir.create(write_dir)
     
     readr::write_csv(merged,
-                     glue::glue(write_dir, 'neon_metab_{q_type}_{site}_{year}.csv'))
+                     glue::glue(write_dir, 'neon_metab_{site}_{wyear}_Q-{q_type}_Z-{z_method}_TS-{sensor_src}.csv'))
     
   } # end for loop
   
@@ -107,7 +136,7 @@ nmh_estimate_metab_bayes <- function(mod_dir = 'data/model_runs/',
                               readr::read_csv)
   
   readr::write_csv(estimates,
-                   glue::glue(file_dir, 'NEON_metab_{q_type}_estimates.csv'))
+                   glue::glue(dir, 'NEON_metab_estimates.csv'))
   
   return(estimates)
   

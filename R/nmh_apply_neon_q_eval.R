@@ -1,6 +1,20 @@
-#' @export
-nmh_apply_neon_q_eval <- function(q_eval = NULL, q_df = NULL, raw_q_dir = 'data/raw/neon', write_dir = 'data/munged/qaqc', site = NULL,
-                              qaqc_keep = c('Tier1', 'Tier2'), q_write = FALSE) {
+#' Apply discharge evaluation (Rhea et al. 2023) to raw Continuous discharge data product
+#' 
+#' @param q_eval object containing discharge evaluation details. If not included, will be downloaded using get_neon_eval_q()
+#' @param q_df data frame of continuous discharge product
+#' @param raw_q_dir directory of raw Continuous discharge data product
+#' @param write_dir directory for where to save the evaluated discharge product
+#' @param site 4 character NEON site code to specify
+#' @param qaqc_keep which tier of discharge evaluation should be kept, Tier 1 or Tier 2?
+#' @param q_write logical. Write data to csv file or return the dataframe?
+#' @export 
+nmh_apply_neon_q_eval <- function(q_eval = NULL, 
+                                  q_df = NULL, 
+                                  raw_q_dir = 'data/raw/neon', 
+                                  write_dir = 'data/munged/qaqc', 
+                                  site = NULL,
+                                  qaqc_keep = c('Tier1', 'Tier2'), 
+                                  q_write = FALSE) {
 
   if(is.null(site)) {
     stop(glue('no site name supplied to function'))

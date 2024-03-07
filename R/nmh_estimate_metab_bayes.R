@@ -1,6 +1,8 @@
+#'
+#'
+#'
 nmh_estimate_metab_bayes <- function(dir = 'data/model_runs/Bayes/') {
-  
-  
+
   dir_daily <- glue::glue(dir, 'daily/')
   
   mods <- list.files(dir_daily,

@@ -412,42 +412,6 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
   }
 }
 
-get_neon_site_data <- function(arg = 'details') {
-  
-  # create the site codes
-  us_states <- USAboundaries::us_states()
-  
-  neon_metadata_all <- readr::read_csv('https://www.neonscience.org/sites/default/files/NEON_Field_Site_Metadata_20220412.csv')
-  
-  site_data <- neon_metadata_all %>% 
-    dplyr::filter(field_site_subtype %in% c('Wadeable Stream', 'Non-wadeable River'))
-
-  site_geo <- site_data %>%
-    sf::st_as_sf(coords = c('field_longitude', 'field_latitude'), 
-                 crs = 4326)
-  
-  region_code <- sf::st_join(site_geo, 
-                            us_states) %>%
-    dplyr::pull(state_abbr)
-  
-  sites <- site_data %>%
-    dplyr::pull(field_site_id)
-  
-  # build a data frame with sites, site codes, and dates that will carry out of the loop
-  # sp_code is the look-up site name in streampulse
-  site_deets <- data.frame(
-    site_code = sites,
-    sp_code = paste0(region_code, '_', sites, 'temp'),
-    start_date = NA,
-    end_date = NA
-  )
-  
-  if(arg == 'details') {
-    return(site_deets)
-  } else {
-    return(site_data)
-  }
-}
 
 read_all_neon_feathers <- function(file_path, by_site = TRUE){
   
@@ -571,7 +535,6 @@ get_streampulse_data <- function(site_deets,
 
 
 
-
 pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.com/MacroSHEDS/macrosheds.git", quietly = FALSE) {
   res <- try(requireNamespace(pkg, quietly = quietly))
   if(res) {
@@ -593,6 +556,7 @@ pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.c
     }
   }
 }
+
 
 calc_DO_sat <- function (temp.water, pressure.air, salinity.water = u(0, "PSU"), 
                          model = "garcia-benson", ...) {

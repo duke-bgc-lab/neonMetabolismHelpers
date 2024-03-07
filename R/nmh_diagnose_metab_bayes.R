@@ -1,3 +1,10 @@
+#' Run diagnostics on Bayesian model run
+#' 
+#' @param mod_dir directory of the Bayesian model outputs from streamMetabolizer
+#' @param log logical. Should the tracker file populate as it completes the function
+#' @returns data frame of diagnostic file 
+#' @export
+
 nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
                                           log = TRUE) {
   

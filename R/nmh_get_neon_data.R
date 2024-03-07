@@ -212,9 +212,8 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
              if(stream_only) {
                writeLines('this package is meant for stream and river data only -- filtering available sites to only stream and river type NEON sites')
 
-               neon_sites <- macrosheds::ms_load_sites() %>%
-                 dplyr::filter(network == 'neon') %>%
-                 dplyr::pull("site_code")
+               neon_sites <- get_neon_site_data(arg = 'n') %>% 
+                 dplyr::pull(field_site_id)
 
                avail_sites <- avail_sites[avail_sites %in% neon_sites]
 
@@ -279,7 +278,7 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
                          writeLines(paste('ERROR at', site_name, 'trying again with expanded package'))
                          data_pile <- try(neonUtilities::loadByProduct(dpID = product_code,
                                                                        site = site_name,
-                                                                       package='expanded',
+                                                                       package = 'expanded',
                                                                        startdate = startdate,
                                                                        enddate = enddate,
                                                                        token = neon_api_token,
@@ -347,4 +346,9 @@ nmh_get_neon_data <- function(product_codes = 'all', q_type = 'raw',
     } # end product loop
 }
 
-## nmh_get_neon_data(product_codes = 'DP4.00130.001', q_type = 'raw', site_filter = 'ARIK', startdate = '2017-01', enddate = '2017-12')
+# nmh_get_neon_data(product_codes = 'DP4.00130.001',
+#                   q_type = 'raw', 
+#                   site_filter = 'ARIK', 
+#                   startdate = '2017-01', 
+#                   enddate = '2017-12',
+#                   log = FALSE)

@@ -1,8 +1,11 @@
-#' @export
 nmh_get_neon_q_sim <- function(
     gdrive = "MacroSheds",
     gdrive_filename = 'modeled_discharge_2022-10-13',
     file_ext = '.zip') {
+
+  # NOTE: this all must be replaced with most up to date public data source, a la
+  # Vlah et al. 2023 -- https://doi.org/10.5194/egusphere-2023-1178
+  # figshare: https://figshare.com/articles/dataset/Composite_discharge_series_for_each_NEON_stream_river_site_/23206592
   
   # first ----
   # download THE MOST RECENT NEON discharge simulations from Google Drive

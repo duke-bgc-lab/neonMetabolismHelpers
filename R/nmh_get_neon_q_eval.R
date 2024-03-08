@@ -11,7 +11,10 @@ nmh_get_neon_q_eval <- function(dest_fp = 'data/raw/qaqc/', dest_fn = 'neon_q_ev
       dir.create(dest_fp, recursive = TRUE)
     }
 
-    # read in the discharge evaluation from Rhea et al. (in prep)
+    # read in the discharge evaluation from Rhea et al. 2023
+    # Data citation:
+    # Rhea, S. NEON Continuous Discharge Evaluation. HydroShare https://doi.org/10.4211/hs.03c52d47d66e40f4854da8397c7d9668 (2023).
+    # NOTE: must make sure function runs the same in case there have been any updates to data format in Hydroshare
     download.file(
       url = 'https://www.hydroshare.org/resource/03c52d47d66e40f4854da8397c7d9668/data/contents/neon_q_eval.csv',
       destfile = destfile

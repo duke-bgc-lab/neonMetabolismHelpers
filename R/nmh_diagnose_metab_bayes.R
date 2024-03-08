@@ -1,3 +1,10 @@
+#' Run diagnostics on Bayesian model run
+#' 
+#' @param mod_dir directory of the Bayesian model outputs from streamMetabolizer
+#' @param log logical. Should the tracker file populate as it completes the function
+#' @returns data frame of diagnostic file 
+#' @export
+
 nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
                                           log = TRUE) {
   
@@ -7,7 +14,7 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
                        full.names = TRUE)
   
   out <- data.frame(site = character(),
-                    year = character(),
+                    wyear = character(),
                     q_type = character(),
                     z_method = character(),
                     sensor_src = character(),
@@ -25,29 +32,23 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
   
   for(i in 1:length(n_mods)) {
     
-    # TODO: check this based on the outputs we get and for the other downstream funs
-    file <- gsub(mod_dir_fits,'',n_mods[j])
+    file <- gsub(mod_dir_fits,'',n_mods[i])
     file_chunks <- unlist(stringr::str_split(file, '_'))
     
     # reconstruct how the data were compiled
     site <- file_chunks[1]
     wyear <- file_chunks[2]
     q_type <- gsub('Q-','', file_chunks[3])
-    z_method <- gsub('Z-','',file_chunks[4])
+    z_method <- gsub('z-','',file_chunks[4])
     sensor_src <- gsub('.csv','', gsub('TS-','', file_chunks[5]))
     
-    # TODO: check these
-    site <- stringr::str_split(file, c('_','/'))[[2]][6] %>%
-      substr(.,1,4)
+    # read in data
+    d <- readr::read_csv(glue::glue(mod_dir_fits, file))
     
-    start_date <- stringr::str_split(file, c('_','/'))[[2]][6] %>%
-      substr(.,6,15)
-    
-    end_date <- stringr::str_split(file, c('_','/'))[[2]][6] %>%
-      substr(.,17,26)
-    
-    year <- substr(start_date, 1,4)
-    
+    # pull out dates
+    start_date <- dplyr::pull(d[1, 'date'])
+    end_date <- dplyr::pull(d[length(d$date), 'date'])
+
     if('GPP_50pct' %in% names(d)) {
       days <- d %>%
         dplyr::summarise(n = length(GPP_50pct)) %>%
@@ -76,9 +77,9 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
     } else  # end if statement
       next
     
-    dir_DO <- glue::glue(mod_dir_type,'/Bayes/mod_and_obs_DO')
+    dir_DO <- glue::glue(mod_dir,'mod_and_obs_DO/')
     
-    DO <- try(readr::read_csv(glue(dir_DO, '/', site, '_', start_date, '_', end_date, '_mod_and_obs_DO.csv')))
+    DO <- try(readr::read_csv(glue::glue(dir_DO, '/', site, '_', wyear, '_Q-', q_type, '_z-',z_method, '_TS-',sensor_src,'_mod_and_obs_DO.csv')))
     
     if(inherits(DO, 'try-error')){
       next
@@ -86,11 +87,11 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
     
     res <- glue::glue(diff(DO$solar.time) %>%
                         dplyr::first(),
-                      'min')
+                      ' min')
     
-    dir_KQ <- glue::glue(mod_dir_type,'/Bayes/KQ_overall')
+    dir_KQ <- glue::glue(mod_dir,'/KQ_overall')
     
-    KQ <- try(readr::read_csv(glue(dir_KQ, '/', site, '_', start_date, '_', end_date, '_KQ_overall.csv')))
+    KQ <- try(readr::read_csv(glue::glue(dir_KQ, '/', site, '_', wyear, '_Q-', q_type, '_z-',z_method, '_TS-',sensor_src, '_KQ_overall.csv')))
     
     if(inherits(KQ, 'try-error')){
       next
@@ -99,9 +100,9 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
     K600_daily_sigma_Rhat <- KQ %>%
       dplyr::pull(K600_daily_sigma_Rhat)
     
-    dir_overall <- glue::glue(mod_dir_type,'/Bayes/overall')
+    dir_overall <- glue::glue(mod_dir,'/overall')
     
-    overall <- try(readr::read_csv(glue(dir_overall, '/', site, '_', start_date, '_', end_date, '_overall.csv')))
+    overall <- try(readr::read_csv(glue::glue(dir_overall, '/', site, '_', wyear, '_Q-', q_type, '_z-',z_method, '_TS-',sensor_src, '_overall.csv')))
     
     if(inherits(overall, 'try-error')){
       next
@@ -115,7 +116,10 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
     
     out <- out %>%
       dplyr::add_row(site = site,
-                     year = year,
+                     wyear = wyear,
+                     q_type = q_type,
+                     z_method = z_method,
+                     sensor_src = sensor_src,
                      n_days = days,
                      f_days = (days/365)*100,
                      resolution = res,
@@ -130,7 +134,7 @@ nmh_diagnose_neon_metab_bayes <- function(mod_dir = 'data/model_runs/Bayes/',
   } # end for loop
   
   readr::write_csv(out,
-                   glue::glue(mod_dir_type,'/Bayes/diag_neon_metab_{type}.csv'))
+                   glue::glue(mod_dir,'/diag_neon_metab_bayes.csv'))
   
   return(out)
   

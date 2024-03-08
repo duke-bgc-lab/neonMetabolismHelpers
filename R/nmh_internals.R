@@ -45,7 +45,7 @@ serialize_list_to_dir <- function(l, dest){
       fpath = paste0(dest, '/', names(l)[i], '.feather')
       feather::write_feather(l[[i]], fpath)
       
-    } else if('character' %in% x){
+    } else if('character' %in% elemclasses[[i]]){
       
       fpath = paste0(dest, '/', names(l)[i], '.txt')
       readr::write_file(l[[i]], fpath)
@@ -310,7 +310,7 @@ get_neon_product <- function(product_codes = 'DP0.20288.001',
     if(avail_sites_n == 0) {
       stop('no available sites')
     }
-
+    
     # download product for each site
     writeLines(paste('\nquerying for NEON product code:', product_code,
                      '\n  total sites to query:', avail_sites_n))
@@ -384,7 +384,7 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
     if(avail_sites_n == 0) {
       stop('no available sites')
     }
-
+    
     # download product for each site
     writeLines(paste('\nquerying for NEON product code:', product_code,
                      '\n  total sites to query:', avail_sites_n))
@@ -412,44 +412,11 @@ sample_neon_product <- function(product_codes = 'DP0.20288.001', product_name = 
   }
 }
 
-get_neon_site_data <- function(arg = 'details') {
-  
-  # create the site codes
-  us_states <- USAboundaries::us_states()
-  
-  site_data <- macrosheds::ms_load_sites() %>% 
-    dplyr::filter(domain == 'neon',
-           site_type == 'stream_gauge')
-  
-  site_geo <- site_data %>%
-    sf::st_as_sf(coords = c('longitude', 'latitude'), crs = 4326)
-  
-  region_code = sf::st_join(site_geo, us_states) %>%
-    dplyr::pull(state_abbr)
-  
-  sites <- site_data %>%
-    dplyr::pull(site_code)
-  
-  # build a data frame with sites, site codes, and dates that will carry out of the loop
-  # sp_code is the look-up site name in streampulse
-  site_deets <- data.frame(
-    site_code = sites,
-    sp_code = paste0(region_code, '_', sites, 'temp'),
-    start_date = NA,
-    end_date = NA
-  )
-  
-  if(arg == 'details') {
-    return(site_deets)
-  } else {
-    return(site_data)
-  }
-}
 
 read_all_neon_feathers <- function(file_path, by_site = TRUE){
   
   if(by_site == TRUE){
-
+    
     # full paht ot each NEON site directory in data location
     site_dirs <- list.files(file_path, full.names = TRUE)
     
@@ -474,7 +441,7 @@ read_all_neon_feathers <- function(file_path, by_site = TRUE){
     
     inv_file_names <- unique(inv_file_names)
     site_names <- unique(site_name)
-
+    
     data_files <-  inv_file_names[!grepl('categoricalCodes|readme|validation|variables', inv_file_names)]
     
     final_list <- list()
@@ -527,7 +494,7 @@ get_streampulse_data <- function(site_deets,
   
   # checking for user defined filepath
   if(is.null(dest_fp)) {
-    dest_fp <- file.path(getwd(), 'data', 'raw', 'streampulse')
+    dest_fp <- file.path(getwd(), 'data', 'raw', 'streampulse_2022')
   }
   
   if(!dir.exists(dest_fp)){
@@ -546,25 +513,27 @@ get_streampulse_data <- function(site_deets,
     # define lat and long, based on NEON site data
     long <- site_data %>%
       dplyr::filter(site_code == !!site_code) %>%
-      dplyr::pull(longitude)
+      dplyr::pull(field_longitude)
     
     lat <- site_data %>%
       dplyr::filter(site_code == !!site_code) %>%
-      dplyr::pull(latitude)
+      dplyr::pull(field_latitude)
     
     # request data from streampulse
     # each NEON site has temperature and DO data at 15 minute intervals
-    streampulse_data = try({
+    streampulse_data <- try({
       StreamPULSE::request_data(sitecode = sp_code)
     })
     
     print(paste('downloading', site_code, 'data from streampulse'))
-    file_path <- glue::glue('data/raw/streampulse/{site_code}.csv')
+    file_path <- glue::glue('data/raw/streampulse_2022/{site_code}_2022.csv')
     
     readr::write_csv(streampulse_data$data, file_path)
   } # end for loop
   
 } # end function
+
+
 
 pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.com/MacroSHEDS/macrosheds.git", quietly = FALSE) {
   res <- try(requireNamespace(pkg, quietly = quietly))
@@ -572,21 +541,22 @@ pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.c
     library(macrosheds)
   } else {
     if(!quietly) {
-        if(menu(c("Yes", "No"),
-          title= paste("Are you sure you want to install package", pkg)) == "1") {
-          inst <- try(devtools::install_github(pkg_gh))
-
-          if(class('inst') == 'try-error') {
-            warning('devtools::install_github did not work, trying remotes::install_github')
-            inst <- try(remotes::install_github(pkg_gh))
-          }
-
-        } else {
-          warning("no installation of required package")
+      if(menu(c("Yes", "No"),
+              title= paste("Are you sure you want to install package", pkg)) == "1") {
+        inst <- try(devtools::install_github(pkg_gh))
+        
+        if(class('inst') == 'try-error') {
+          warning('devtools::install_github did not work, trying remotes::install_github')
+          inst <- try(remotes::install_github(pkg_gh))
         }
+        
+      } else {
+        warning("no installation of required package")
+      }
     }
   }
 }
+
 
 calc_DO_sat <- function (temp.water, pressure.air, salinity.water = u(0, "PSU"), 
                          model = "garcia-benson", ...) {

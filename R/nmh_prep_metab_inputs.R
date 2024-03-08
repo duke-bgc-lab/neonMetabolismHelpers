@@ -37,7 +37,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     }
     
     if(q_type == 'simulated') {
-        neon_Q_sim <- nmh_get_neon_q_sim()
+        neon_Q_sim <- nmh_get_neon_q_sim_figshare()
     }
     
     # Process depth selection
@@ -50,13 +50,13 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     site_deets <- get_neon_site_data(arg = 'details')
     
     # Process sensor data input
-    if(sensor_src == 'streampulse' & length(list.files('data/raw/streampulse/')) == 0) {
+    if(sensor_src == 'streampulse' & length(list.files('data/raw/streampulse_all/')) == 0) {
         get_streampulse_data(site_deets,
                              site_data)
     }
     
     # specify directories where the raw data is saved
-    sp_dir <- glue::glue(dir, '/streampulse')          # DO and temperature data, from streampulse
+    sp_dir <- glue::glue(dir, '/streampulse_all')          # DO and temperature data, from streampulse
     neon_wq_dir <- glue::glue(dir, '/neon/Water quality')
     neon_temp_dir <- glue::glue(dir, '/neon/Temperature (PRT) in surface water')
     neon_temp_buoy_dir <- glue::glue(dir, '/neon/Temperature at specific depth in surface water')
@@ -84,13 +84,16 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
     for(i in 1:length(site_id)){
         
         # define site and its geographic coordinates
-        site <- site_id[i]
+        site_sp <- site_id[i]
+        
+        site <- substr(site_sp, 1,4)
+        
         lat <- site_data %>%
-            dplyr::filter(site_code %in% site) %>%
-            dplyr::pull(latitude)
+            dplyr::filter(field_site_id %in% site) %>%
+            dplyr::pull(field_latitude)
         lon <- site_data %>%
-            dplyr::filter(site_code %in% site) %>%
-            dplyr::pull(longitude)
+            dplyr::filter(field_site_id %in% site) %>%
+            dplyr::pull(field_longitude)
         
         if(log){
             cat(paste0(logcode,' preparing time series for: ', site),
@@ -99,13 +102,14 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
         
         if(sensor_src == 'streampulse'){
             # read in the temperature and DO sensor data
-            sensor_data <- readr::read_csv(glue::glue(sp_dir,'/{site}.csv'))
+            sensor_data <- readr::read_csv(glue::glue(sp_dir,'/{site_sp}.csv'))
             
             # manipulate sensor data
             sensor_data_clean <- sensor_data %>%
                 dplyr::filter(is.na(flagtype)) %>%                # remove flagged data; see text for specifics and StreamPULSE portal for definitions
                 tidyr::pivot_wider(names_from = 'variable',              # convert from long to wide format
-                                   values_from = 'value') %>%
+                                   values_from = 'value',
+                                   values_fn = mean) %>%
                 dplyr::mutate(difftime = c(NA, diff(DateTime_UTC))) %>%  # determine difference in time between each row
                 dplyr::filter(difftime <= 180,                           # filter time-stamps less than 3 hr in length
                               is.finite(DO_mgL),                         # and non-finite data from numeric strings
@@ -328,7 +332,7 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
             if(q_type == 'simulated') {
                 q_final <- neon_Q_sim %>%
                     dplyr::filter(site %in% !!site) %>%
-                    dplyr::mutate(Q_15min = Q_predicted/1000) %>%
+                    dplyr::mutate(Q_15min = discharge_Ls/1000) %>% 
                     dplyr::select(DateTime_UTC = datetime,
                                   Q_15min)
             }
@@ -364,11 +368,11 @@ nmh_prep_metab_inputs <- function(dir = 'data/raw',
                     dplyr::select(f) %>%
                     dplyr::pull()
             } else {
-                cat(paste0(logcode,'-- Measured scaling coefficients have R2 < 0.1, switch to modeled values'),
-                    file = 'nmh_log.txt', append = TRUE, sep = '\n')
-                z_method <- 'model'
-                c <- 0.409
-                f <- 0.294
+                cat(paste0(logcode,'-- Measured scaling coefficients have R2 < 0.1'),
+                    file = 'nmh_log.txt', 
+                    append = TRUE,
+                    sep = '\n')
+                next
             }
         }
         

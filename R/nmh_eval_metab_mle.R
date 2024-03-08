@@ -1,3 +1,8 @@
+#' Evaluate and diagnose the MLE model run
+#' 
+#' @param dir directory of the MLE model outputs
+#' @param log logical. Should the tracker file populate as it completes the function
+#' @returns data frame of diagnostic file
 #' @export
 nmh_eval_metab_mle <- function(dir = 'data/model_runs/MLE/dat_fit/',
                                log = TRUE) {

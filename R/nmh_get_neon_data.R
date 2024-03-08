@@ -38,7 +38,8 @@
 #' )
 #' @export
 
-nmh_get_neon_data <- function(product_codes = 'all',
+nmh_get_neon_data <- function(product_codes = 'all', 
+
                               q_type = 'raw',
                               dest_fp = NULL, # file path where all data is saved to
                               log = TRUE,
@@ -262,9 +263,8 @@ nmh_get_neon_data <- function(product_codes = 'all',
              if(stream_only) {
                writeLines('this package is meant for stream and river data only -- filtering available sites to only stream and river type NEON sites')
 
-               neon_sites <- macrosheds::ms_load_sites() %>%
-                 dplyr::filter(network == 'neon') %>%
-                 dplyr::pull("site_code")
+               neon_sites <- get_neon_site_data(arg = 'n') %>% 
+                 dplyr::pull(field_site_id)
 
                avail_sites <- avail_sites[avail_sites %in% neon_sites]
 
@@ -329,7 +329,7 @@ nmh_get_neon_data <- function(product_codes = 'all',
                          writeLines(paste('ERROR at', site_name, 'trying again with expanded package'))
                          data_pile <- try(neonUtilities::loadByProduct(dpID = product_code,
                                                                        site = site_name,
-                                                                       package='expanded',
+                                                                       package = 'expanded',
                                                                        startdate = startdate,
                                                                        enddate = enddate,
                                                                        token = neon_api_token,

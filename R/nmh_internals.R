@@ -557,7 +557,9 @@ pkg_namespace_require <- function(pkg = 'macrosheds', pkg_gh = "https://github.c
   }
 }
 
-
+# calc_DO_sat is from USGS "streamMeatbolizer" R package: https://github.com/DOI-USGS/streamMetabolizer/blob/main/R/calc_DO_sat.R
+# which itself relies on the calculations performed in the GLEON lakeMetabolizer R package
+# based on equations (respectively) developed by Garcia and Gordon (1992), Benson and Krause (1980, 1984), and Weiss (1970)
 calc_DO_sat <- function (temp.water, pressure.air, salinity.water = u(0, "PSU"), 
                          model = "garcia-benson", ...) {
   with.units <- any(sapply(list(temp.water, pressure.air), 

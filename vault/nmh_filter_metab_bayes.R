@@ -1,7 +1,6 @@
-# TODO: update with code on my laptop
 
-nmh_filter_metab_bayes <- function(mod_dir = 'data/model_runs/',
-                                   q_type = c('raw', 'qaqc', 'simulated')) {
+
+nmh_filter_metab_bayes <- function(mod_dir = 'data/model_runs/') {
 
   est_dir <- glue::glue(mod_dir, q_type, '/Bayes/')
   

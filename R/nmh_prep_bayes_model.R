@@ -1,4 +1,10 @@
+#' Prepare R to run streamMetabolizer and its dependencies
+#' 
+#' @details
+#' Loads streamMetabolizer from github as the most up-to-date version and its dependencies, rstan, StandHeaders, and unitted from github
+#' 
 #' @export
+
 nmh_prep_bayes_model <- function() {
   tryCatch({
     library('rstan')

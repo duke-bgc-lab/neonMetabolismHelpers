@@ -1,3 +1,15 @@
+#' Download NEON discharge simulations from Vlah et al. (2024) available on figshare
+#' 
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#' 
+#' @param dest_fp directory location to save simulated discharge. Data are saved with a folder for each site and a text file for each site
+#' 
+#' @examples
+#' nmh_get_neon_q_sim_figshare()
+#' 
+#' @export
+
 nmh_get_neon_q_sim_figshare <- function(dest_fp = 'data/raw/macrosheds/') {
   
   if(!dir.exists(dest_fp)){
@@ -25,5 +37,4 @@ nmh_get_neon_q_sim_figshare <- function(dest_fp = 'data/raw/macrosheds/') {
     dplyr::mutate(site = substr(site, 49,52))
   
   return(sims)
-  
 }

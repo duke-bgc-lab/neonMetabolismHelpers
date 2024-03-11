@@ -1,5 +1,18 @@
+#' Model metabolism using MLE optimization
+#'
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#' 
+#' @param input_dir directory location of the time series input files for streamMetabolizer
+#' @param log logical. If TRUE information about this function run will be printed to a text file.
+#' 
+#' @details This function works best with teh assumed directory that the R package creates and saves outputs assuming that directory structure
+#' 
+#' @examples 
+#' nmh_model_neon_metab_mle(data = 'data/sm_input/', log = TRUE)
+#'
 #' @export
-# default directory is the default NEON input files, or data that uses only data from NEON
+
 nmh_model_neon_metab_mle <- function(input_dir = 'data/sm_input/',
                                      log = TRUE) {
   

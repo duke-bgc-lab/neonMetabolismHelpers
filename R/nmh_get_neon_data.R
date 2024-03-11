@@ -1,6 +1,6 @@
 #' Download NEON Products, with options for key alternative data sources
 #'
-#' @author Nick Marzolf, \email{@@}
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
 #' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
 #'
 #' @param product_codes character. Character or character vector of valid NEON product codes, e.g. "DP4.00130.001",

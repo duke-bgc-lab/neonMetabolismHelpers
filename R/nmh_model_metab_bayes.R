@@ -1,4 +1,29 @@
+#' Run NEON metabolism data through Bayesian model in streamMetabolizer
+#' 
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#' 
+#' @param input_dir directory location of input time-series data for streamMetabolizer. These files must be formatted correctly for streamMetabolizer
+#' @param log logical. If TRUE information about this function run will be printed to a text file.
+#' 
+#' @details
+#' The specified directory contains csv files that are prepared to read and run in streamMetabolizer::metab() and have information saved in the file name. In  this
+#' case, information on how the discharge, mean depth, and sensor data were evaluated prior to modeling as specified in nmh_prep_metab_inputs(). The 
+#' function requires, and thus not given the option a priori, the MLE model run priors, which are output and saved from nmh_model_neon_metab_mle() and 
+#' determined by nmh_eval_metab_mle().
+#' We do not recommend using this function as is! Running this function for all sites and all time-points will take weeks (no joke!) and we recommend 
+#' setting this up around parallel processing or on a computer cluster. For a short duration of a few sites, this may be suitable but will still take
+#' a long time to run and eat up computation power on whichever machine is being used. 
+#' This function exports various model outputs from streamMetabolizer::metab() into a pre-determined directory structure that are used in subsequent 
+#' diagnostic and evaluation functions
+#'  
+#' @seealso [nmh_prep_metab_inputs()], [nmh_diagnose_neon_metab_bayes()], [nmh_model_neon_metab_mle()], [nmh_eval_metab_mle()]
+#' 
+#' @examples
+#' nmh_model_metab_bayes()
+#'  
 #' @export
+
 nmh_model_metab_bayes <- function(input_dir = 'data/sm_input/',
                                   log = TRUE) {
   

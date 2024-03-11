@@ -1,3 +1,8 @@
+#' Download hydraulic scaling equations determined for NEON wadable sites from my personal github repo
+#' 
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+
 nmh_get_scaling_coefs <- function(dest_fp = 'data/raw/macrosheds/', 
                                   dest_fn = 'neon_hyd_scaling_coefs.csv') {
   
@@ -10,7 +15,7 @@ nmh_get_scaling_coefs <- function(dest_fp = 'data/raw/macrosheds/',
   }
   
   
-  # NOTE: applies to this and other ismilar ufnction (1) only room in this town for one nmh_get_scaling_coef?
+  # NOTE: applies to this and other similar function (1) only room in this town for one nmh_get_scaling_coef?
   # and (2) should get this data from best available public src associated w publication, or, hosted on figshare with
   # consent of original authors
   download.file(

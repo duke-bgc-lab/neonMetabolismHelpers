@@ -1,3 +1,31 @@
+#' Prepare time-series of NEON data for input into streamMetabolizer
+#' 
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#' 
+#' @param dir directory location of the raw data accessed from the NEON data portal or other sources
+#' @param sensor_src How should sensor time-series data be processed? If sensor_src = 'neon', the data are cleaned by removing NEON-determined quality flags (QFs). If sensor_src = 'streampulse', the data are accessed from the streampulse portal and added to the time-series as such
+#' @param q_type How should discharge be evalated? If q_type = 'raw', NEON discharge is added from the Continuous discharge data product as-is.
+#' If q_type = 'qaqc', discharge from the Continuous discharge data product are passed through the evaluation from Rhea et al. (2023) to filter discharge that have strong rating curves
+#' If q_type = 'simulated', simulated NEON discharge is accessed from Vlah et al. (2024)
+#' @param z_method How should mean depth be estimated? If z_method = 'meas', hydraulic scaling coefficients for the 24 wadable sites are accessed and fit using equations from Leopold and Maddock 1953.
+#' For cases where the scaling equations have poor fits (R2 < 0.1) and where z_method = 'model', we apply the coefficients from Raymond et al. (2012) that apply across river networks in North America.
+#' @param log logical. If TRUE information about this function run will be printed to a text file.
+#'
+#' @details
+#' This function prepares the time series and saves as a text file to data/sm_input/. Each file has the arguements for sensor_src, q_type, and z_method saved in the file name
+#' and those meta-data are propagated through subsequent analyses. The files are split by site (n = 27) and by water year (2016 - 2023). 
+#' Running this function can take a long time. The data are measured at 1-minute intervals and are large files, and depending on the availability of Barometric pressure
+#' data product, gap filling is run by internal functions that access nearest NOAA weather stations and can take ~minutes to access and merge datasets
+#' 
+#' @examples
+#' Quickest way to prepare data
+#' neon_prep_metab_inputs(dir = 'data/raw', sensor_src = 'neon', q_type = 'raw', z_method = 'model', log = TRUE)
+#' 
+#' Most rigorous way to prepare data
+#' neon_prep_metab_inputs(dir = 'data/raw', sensor_src = 'streampulse', q_type = 'qaqc', z_method = 'meas', log = TRUE)
+#' 
+#'  
 #' @export
 nmh_prep_metab_inputs <- function(dir = 'data/raw',
                                   sensor_src = c('neon', 'streampulse'),

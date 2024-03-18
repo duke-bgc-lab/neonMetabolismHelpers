@@ -1,3 +1,15 @@
+#' Download simulated NEON discharge data from Vlah et al. 2023 -- https://doi.org/10.5194/egusphere-2023-1178
+#'
+#' @author Nick Marzolf, \email{@@}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#'
+#' @param gdrive character.
+#' @details
+#' @seealso [nmh_get_hydraulic_coef_data()], [nmh_get_neon_data()], [nmh_get_neon_q_eval()], [nmh_get_scaling_coefs()], [nmh_get_tomb_q()]
+#' @examples
+#' nmh_get_neon_q_sim(
+#' )
+#' @export
 nmh_get_neon_q_sim <- function(
     gdrive = "MacroSheds",
     gdrive_filename = 'modeled_discharge_2022-10-13',

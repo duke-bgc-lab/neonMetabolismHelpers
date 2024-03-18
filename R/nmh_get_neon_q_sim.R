@@ -7,9 +7,9 @@
 #' @details
 #' @seealso [nmh_get_hydraulic_coef_data()], [nmh_get_neon_data()], [nmh_get_neon_q_eval()], [nmh_get_scaling_coefs()], [nmh_get_tomb_q()]
 #' @examples
-#' nmh_get_neon_q_sim(
-#' )
+#' nmh_get_neon_q_sim()
 #' @export
+
 nmh_get_neon_q_sim <- function(dest_fp = 'data/raw/macrosheds/') {
 
   if(!dir.exists(dest_fp)){

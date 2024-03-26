@@ -1,5 +1,17 @@
+#' Download NEON discharge evaluation
+#'
+#' @author Nick Marzolf, \email{@@}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#'
+#' @param dest_fp character. file path to download data into.
+#' @details
+#' @seealso [nmh_get_hydraulic_coef_data()], [nmh_get_neon_data()], [nmh_get_neon_q_sim()], [nmh_get_scaling_coefs()], [nmh_get_tomb_q()]
+#' @examples
+#' nmh_get_neon_q_eval()
 #' @export
-nmh_get_neon_q_eval <- function(dest_fp = 'data/raw/qaqc/', dest_fn = 'neon_q_eval.csv', download = FALSE) {
+nmh_get_neon_q_eval <- function(dest_fp = 'data/raw/qaqc/',
+                                dest_fn = 'neon_q_eval.csv',
+                                download = FALSE) {
   
   if(download) {
     destfile <- file.path(dest_fp, dest_fn)

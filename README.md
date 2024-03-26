@@ -1,16 +1,3 @@
-<!--
-thank you "https://github.com/DouweHorsthuis/README-Template/blob/master/BLANK_README.md" for skeleton
--->
-
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-<!-- [![LinkedIn][linkedin-shield]][linkedin-url] -->
-
-<br>
-
 # neonMetabolismHelpers
 
 an R package of functions intended to help users modeling stream and river metabolism from National Ecological Observatory Network (NEON) data.

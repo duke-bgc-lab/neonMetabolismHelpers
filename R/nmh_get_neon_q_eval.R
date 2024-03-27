@@ -14,9 +14,12 @@
 #' @details
 #' Accesses file saved in Hydroshare data repository: https://www.hydroshare.org/resource/03c52d47d66e40f4854da8397c7d9668/data/contents/neon_q_eval.csv
 #'  
+#' @seealso [nmh_get_hydraulic_coef_data()], [nmh_get_neon_data()], [nmh_get_neon_q_sim()], [nmh_get_scaling_coefs()], [nmh_get_tomb_q()]
+#'
 #' @export
 
 nmh_get_neon_q_eval <- function(dest_fp = 'data/raw/qaqc/', dest_fn = 'neon_q_eval.csv', download = FALSE) {
+
   
   if(download) {
     destfile <- file.path(dest_fp, dest_fn)

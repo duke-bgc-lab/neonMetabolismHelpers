@@ -39,10 +39,7 @@ vignettes/*.pdf
 .Renviron
 
 # folders from forks to ignore
-data/raw/
-data/munged/
-data/sm_input/
-data/model_runs/
+data/
 
 # neon api key and other "secrets"
 ms-neon-account-data.json

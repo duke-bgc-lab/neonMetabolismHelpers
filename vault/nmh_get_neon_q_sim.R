@@ -1,3 +1,4 @@
+
 #' Download simulated NEON discharge data from Vlah et al. 2023 -- https://doi.org/10.5194/egusphere-2023-1178
 #'
 #' @author Nick Marzolf, \email{@@}
@@ -37,5 +38,4 @@ nmh_get_neon_q_sim <- function(dest_fp = 'data/raw/macrosheds/') {
     dplyr::mutate(site = substr(site, 49,52))
 
   return(sims)
-
 }

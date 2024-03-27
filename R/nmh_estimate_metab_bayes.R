@@ -1,6 +1,19 @@
+#' Determine the best quality estimates of NEON metabolism Bayesian model run
+#' 
+#' @author Nick Marzolf, \email{nick.marzolf@@jonesctr.org}
+#' @author Wes Slaughter, \email{wslaughter@@berkeley.edu}
+#' 
+#' @param dir directory location of Bayesian model outputs
+#' 
+#' @details
+#' This function reads in the outputs and passes the data through the diagnostic files output from nmh_diagnose_neon_metab_bayes(). Further, summary
+#' statistics from the input time-series file are appended to the output data (e.g. discharge, DO, temperature) and added to a new directory#' 
+#' 
+#' @examples
+#' nmh_estimate_metab_bayes(dir = 'data/model_runs/Bayes/')
 #'
-#'
-#'
+#' @export
+
 nmh_estimate_metab_bayes <- function(dir = 'data/model_runs/Bayes/') {
 
   dir_daily <- glue::glue(dir, 'daily/')

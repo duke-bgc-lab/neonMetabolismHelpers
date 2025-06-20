@@ -6,7 +6,7 @@ At the coarsest description, these functions execute discrete steps to get data 
 
 ## Install and load
 
-    devtools::install_github(duke-bgc-lab/neonMetabolismHelpers)
+    devtools::install_github('duke-bgc-lab/neonMetabolismHelpers')
     library(neonMetabolismHelpers)
 
 ## Naming conventions
